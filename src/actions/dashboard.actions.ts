@@ -18,11 +18,10 @@ export const getJobsAppliedForPeriod = async (
     const startDate1 = subDays(new Date(), daysAgo);
     const startDate2 = subDays(new Date(), daysAgo * 2);
     const endDate = new Date();
-    const query = (date: Date): Prisma.JobCountArgs => ({
+    const query = (date: Date): Prisma.JobApplicationCountArgs => ({
       where: {
         userId: user.id,
-        applied: true,
-        appliedDate: {
+        createdAt: {
           gte: date,
           lt: endDate,
         },
@@ -30,8 +29,8 @@ export const getJobsAppliedForPeriod = async (
     });
 
     const [count, count2] = await prisma.$transaction([
-      prisma.job.count(query(startDate1)),
-      prisma.job.count(query(startDate2)),
+      prisma.jobApplication.count(query(startDate1)),
+      prisma.jobApplication.count(query(startDate2)),
     ]);
     const difference = Math.abs(count2 - count);
     const trend = calculatePercentageDifference(difference, count);
@@ -50,20 +49,15 @@ export const getRecentJobs = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const list = await prisma.job.findMany({
+    const list = await prisma.jobApplication.findMany({
       where: {
         userId: user.id,
-        applied: true,
       },
       include: {
-        JobSource: true,
-        JobTitle: true,
-        Company: true,
-        Status: true,
-        Location: true,
+        jobPost: true,
       },
       orderBy: {
-        appliedDate: "desc",
+        createdAt: "desc",
       },
       take: APP_CONSTANTS.RECENT_NUM_JOBS_ACTIVITIES,
     });
@@ -179,28 +173,21 @@ export const getJobsActivityForPeriod = async (): Promise<any | undefined> => {
       0,
       0,
     );
-    const jobData = await prisma.job.groupBy({
-      by: "appliedDate",
-      _count: {
-        _all: true,
-      },
+    const jobData = await prisma.jobApplication.findMany({
       where: {
         userId: user.id,
-        applied: true,
-        appliedDate: {
+        createdAt: {
           gte: sevenDaysAgo,
           lte: today,
         },
       },
-      orderBy: {
-        appliedDate: "asc",
-      },
+      select: { createdAt: true },
+      orderBy: { createdAt: "asc" },
     });
     // Reduce to a format that groups by unique date (YYYY-MM-DD) using local time
-    const groupedPosts = jobData.reduce((acc: any, post: any) => {
-      if (!post.appliedDate) return acc;
-      const date = format(new Date(post.appliedDate), "yyyy-MM-dd");
-      acc[date] = (acc[date] || 0) + post._count._all;
+    const groupedPosts = jobData.reduce((acc: any, app: any) => {
+      const date = format(new Date(app.createdAt), "yyyy-MM-dd");
+      acc[date] = (acc[date] || 0) + 1;
       return acc;
     }, {});
     // Get the last 7 days in local time
@@ -350,22 +337,12 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
       0,
       0,
     );
-    const jobData = await prisma.job.groupBy({
-      by: "appliedDate",
-      _count: {
-        _all: true,
-      },
+    const jobData = await prisma.jobApplication.findMany({
       where: {
         userId: user.id,
-        applied: true,
-        appliedDate: {
-          gte: daysAgo,
-          lte: today,
-        },
+        createdAt: { gte: daysAgo, lte: today },
       },
-      orderBy: {
-        appliedDate: "asc",
-      },
+      select: { createdAt: true },
     });
 
     const activityData = await prisma.activity.findMany({
@@ -378,10 +355,9 @@ export const getActivityCalendarData = async (): Promise<any | undefined> => {
     });
 
     const groupedJobs: Record<string, number> = jobData.reduce(
-      (acc: Record<string, number>, job: any) => {
-        if (!job.appliedDate) return acc;
-        const date = format(new Date(job.appliedDate), "yyyy-MM-dd");
-        acc[date] = (acc[date] || 0) + job._count._all;
+      (acc: Record<string, number>, app: any) => {
+        const date = format(new Date(app.createdAt), "yyyy-MM-dd");
+        acc[date] = (acc[date] || 0) + 1;
         return acc;
       },
       {},

@@ -4,20 +4,28 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { JobResponse } from "@/models/job.model";
 import { format } from "date-fns";
 import Link from "next/link";
+
+type RecentJobApplication = {
+  id: string;
+  createdAt: Date | string;
+  jobPost: {
+    title: string;
+    postedBy: string;
+  } | null;
+};
 
 type RecentActivity = {
   id: string;
   activityName: string;
   duration: number | null;
-  endTime: Date | null;
+  endTime: Date | string | null;
   activityType: { label: string } | null;
 };
 
 interface RecentCardToggleProps {
-  jobs: JobResponse[];
+  jobs: RecentJobApplication[];
   activities: RecentActivity[];
 }
 
@@ -68,23 +76,23 @@ export default function RecentCardToggle({
               <div key={job.id} className="flex items-center gap-4">
                 <Avatar className="hidden h-8 w-8 sm:flex">
                   <AvatarImage
-                    src={job.Company?.logoUrl || "/images/jobsync-logo.svg"}
+                    src="/images/jobsync-logo.svg"
                     alt="Avatar"
                   />
                   <AvatarFallback>JS</AvatarFallback>
                 </Avatar>
-                <Link href={`/dashboard/myjobs/${job?.id}`}>
+                <Link href={`/dashboard/applications/${job.id}`}>
                   <div className="grid gap-1">
                     <p className="text-sm font-medium leading-none">
-                      {job.JobTitle?.label}
+                      {job.jobPost?.title ?? "Unknown Title"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {job.Company?.label}
+                      {job.jobPost?.postedBy ?? "Unknown Company"}
                     </p>
                   </div>
                 </Link>
-                <div className="ml-auto text-sm font-medium">
-                  {job?.appliedDate ? format(job.appliedDate, "PP") : "N/A"}
+                <div className="ml-auto text-sm font-medium" suppressHydrationWarning>
+                  {format(new Date(job.createdAt), "PP")}
                 </div>
               </div>
             ))
@@ -102,8 +110,8 @@ export default function RecentCardToggle({
                   <p className="text-sm font-medium">
                     {formatDuration(activity.duration ?? 0)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.endTime ? format(activity.endTime, "PP") : ""}
+                  <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                    {activity.endTime ? format(new Date(activity.endTime), "PP") : ""}
                   </p>
                 </div>
               </div>
