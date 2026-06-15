@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client/react'
+import type { TypedDocumentNode } from '@apollo/client'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { Search, MapPin, CheckCircle2, Loader2, ChevronsUpDown, Check, CalendarIcon, X } from 'lucide-react'
@@ -98,8 +99,10 @@ export function ApplicationsContainer() {
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined)
   const [datePopoverOpen, setDatePopoverOpen] = useState(false)
 
-  const { data: profilesData } = useQuery(JOB_PROFILES_QUERY)
-  const profiles: Array<{ id: string; name: string }> = profilesData?.jobProfiles ?? []
+  const { data: profilesData } = useQuery(
+    JOB_PROFILES_QUERY as TypedDocumentNode<{ jobProfiles: Array<{ id: string; name: string }> }>
+  )
+  const profiles = profilesData?.jobProfiles ?? []
 
   const dateRangeFilter = getDateRangeFromPreset(datePreset, customStartDate)
 
