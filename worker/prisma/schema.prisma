@@ -493,35 +493,22 @@ model JobPost {
 }
 
 model JobProfile {
-  id            String               @id @default(uuid())
-  userId        String
-  user          User                 @relation(fields: [userId], references: [id])
-  name          String
-  linkedin      String?
-  phone         String?
-  github        String?
-  location      String?
-  description   String?
-  details       String?
-  isDefault     Boolean              @default(false)
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  applications  JobApplication[]
-  resumeDrafts  ProfileResumeDraft[]
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id])
+  name         String
+  linkedin     String?
+  phone        String?
+  github       String?
+  location     String?
+  description  String?
+  metadata     Json             @default("{}")
+  isDefault    Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  applications JobApplication[]
 
   @@index([userId])
-}
-
-model ProfileResumeDraft {
-  id           String     @id @default(uuid())
-  jobProfileId String
-  jobProfile   JobProfile @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
-  title        String
-  cvData       Json       @default("{}")
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  @@index([jobProfileId])
 }
 
 model JobApplication {

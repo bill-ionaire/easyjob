@@ -1,13 +1,10 @@
 import {
   LayoutDashboard,
-  SquareCheckBig,
-  BriefcaseBusiness,
-  CalendarClock,
   UserRound,
-  Sheet,
   Wrench,
-  Zap,
-  BookOpen,
+  Newspaper,
+  FolderKanban,
+  IdCard,
 } from "lucide-react";
 
 export const APP_CONSTANTS = {
@@ -53,39 +50,24 @@ export const SIDEBAR_LINKS = [
     label: "Dashboard",
   },
   {
-    icon: BriefcaseBusiness,
-    route: "/dashboard/myjobs",
-    label: "My Jobs",
+    icon: Newspaper,
+    route: "/dashboard/job-posts",
+    label: "Job Posts",
   },
   {
-    icon: Zap,
-    route: "/dashboard/automations",
-    label: "Automations",
+    icon: FolderKanban,
+    route: "/dashboard/applications",
+    label: "Applications",
   },
   {
-    icon: SquareCheckBig,
-    route: "/dashboard/tasks",
-    label: "Tasks",
-  },
-  {
-    icon: CalendarClock,
-    route: "/dashboard/activities",
-    label: "Activities",
-  },
-  {
-    icon: BookOpen,
-    route: "/dashboard/questions",
-    label: "Question Bank",
+    icon: IdCard,
+    route: "/dashboard/job-profiles",
+    label: "Job Profiles",
   },
   {
     icon: UserRound,
     route: "/dashboard/profile",
     label: "Profile",
-  },
-  {
-    icon: Sheet,
-    route: "/dashboard/admin",
-    label: "Administration",
   },
   {
     icon: Wrench,

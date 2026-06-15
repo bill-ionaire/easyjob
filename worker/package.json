@@ -1,0 +1,26 @@
+{
+  "name": "jobsync-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node --experimental-specifier-resolution=node dist/index.js",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.2",
+    "@prisma/client": "^6.19.0",
+    "ai": "^6.0.5",
+    "amqplib": "^0.10.7",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.6",
+    "@types/node": "^22.10.2",
+    "prisma": "^6.19.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5"
+  }
+}
