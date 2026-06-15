@@ -36,6 +36,8 @@ export const JOB_POST_QUERY = gql`
       postedAt
       postedBy
       sourceUrl
+      jobType
+      jobSource
       status
       applicationCount
       createdAt
@@ -61,6 +63,8 @@ export const CREATE_JOB_POST = gql`
     createJobPost(input: $input) {
       id
       title
+      jobType
+      jobSource
       status
       createdAt
     }
@@ -72,6 +76,8 @@ export const UPDATE_JOB_POST = gql`
     updateJobPost(id: $id, input: $input) {
       id
       title
+      jobType
+      jobSource
       status
     }
   }

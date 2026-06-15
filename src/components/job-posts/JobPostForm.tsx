@@ -6,7 +6,6 @@ import { z } from 'zod'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Form,
   FormControl,
@@ -15,10 +14,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Combobox } from '@/components/ComboBox'
 import { getAllCompanies } from '@/actions/company.actions'
 import { getAllJobLocations } from '@/actions/jobLocation.actions'
+import { getJobSourceList } from '@/actions/jobSource.actions'
+import { JOB_TYPES } from '@/models/job.model'
 import { CREATE_JOB_POST, UPDATE_JOB_POST, JOB_POSTS_QUERY } from '@/lib/graphql/queries'
+import TiptapEditor from '@/components/TiptapEditor'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 
@@ -30,6 +33,8 @@ const schema = z.object({
   postedAt: z.string().min(1, 'Posted date is required'),
   salary: z.string().optional(),
   sourceUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  jobType: z.string().optional(),
+  jobSource: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -44,6 +49,8 @@ interface JobPostFormProps {
     salary?: string | null
     location?: string | null
     sourceUrl?: string | null
+    jobType?: string | null
+    jobSource?: string | null
   }
   onSuccess?: () => void
 }
@@ -52,6 +59,7 @@ export function JobPostForm({ editPost, onSuccess }: JobPostFormProps) {
   const router = useRouter()
   const [companies, setCompanies] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
+  const [jobSources, setJobSources] = useState<any[]>([])
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -62,19 +70,36 @@ export function JobPostForm({ editPost, onSuccess }: JobPostFormProps) {
           postedAt: format(new Date(editPost.postedAt), 'yyyy-MM-dd'),
           salary: editPost.salary ?? '',
           sourceUrl: editPost.sourceUrl ?? '',
+          jobType: editPost.jobType ?? '',
           company: '',
           location: '',
+          jobSource: '',
         }
-      : { postedAt: format(new Date(), 'yyyy-MM-dd') },
+      : {
+          title: '',
+          description: '',
+          company: '',
+          location: '',
+          salary: '',
+          sourceUrl: '',
+          jobType: '',
+          jobSource: '',
+          postedAt: format(new Date(), 'yyyy-MM-dd'),
+        },
   })
 
   useEffect(() => {
     let active = true
     ;(async () => {
-      const [c, l] = await Promise.all([getAllCompanies(), getAllJobLocations()])
+      const [c, l, s] = await Promise.all([
+        getAllCompanies(),
+        getAllJobLocations(),
+        getJobSourceList(1, 100),
+      ])
       if (!active) return
       const companyList: any[] = Array.isArray(c) ? c : []
       const locationList: any[] = Array.isArray(l) ? l : []
+      const sourceList: any[] = Array.isArray(s?.data) ? s.data : []
 
       if (editPost) {
         const matchedCompany = companyList.find((co) => co.label === editPost.postedBy)
@@ -96,10 +121,22 @@ export function JobPostForm({ editPost, onSuccess }: JobPostFormProps) {
             form.setValue('location', synthetic.id)
           }
         }
+
+        if (editPost.jobSource) {
+          const matchedSource = sourceList.find((s) => s.label === editPost.jobSource)
+          if (matchedSource) {
+            form.setValue('jobSource', matchedSource.id)
+          } else {
+            const synthetic = { id: `__${editPost.jobSource}__`, label: editPost.jobSource, value: editPost.jobSource }
+            sourceList.unshift(synthetic)
+            form.setValue('jobSource', synthetic.id)
+          }
+        }
       }
 
       setCompanies([...companyList])
       setLocations([...locationList])
+      setJobSources([...sourceList])
     })()
     return () => { active = false }
   }, [editPost]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -110,6 +147,7 @@ export function JobPostForm({ editPost, onSuccess }: JobPostFormProps) {
   const onSubmit = async (data: FormData) => {
     const selectedCompany = companies.find((c) => c.id === data.company)
     const selectedLocation = locations.find((l) => l.id === data.location)
+    const selectedJobSource = jobSources.find((s) => s.id === data.jobSource)
 
     const input = {
       title: data.title,
@@ -119,6 +157,8 @@ export function JobPostForm({ editPost, onSuccess }: JobPostFormProps) {
       salary: data.salary || null,
       location: selectedLocation?.label ?? data.location ?? null,
       sourceUrl: data.sourceUrl || null,
+      jobType: data.jobType || null,
+      jobSource: selectedJobSource?.label ?? data.jobSource || null,
     }
 
     if (editPost) {
@@ -205,15 +245,55 @@ export function JobPostForm({ editPost, onSuccess }: JobPostFormProps) {
           />
         </div>
 
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="jobSource"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Job Source</FormLabel>
+                <FormControl>
+                  <Combobox options={jobSources} field={field} creatable />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="sourceUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Source URL (optional)</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="https://..." />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
-          name="sourceUrl"
+          name="jobType"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Source URL (optional)</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="https://..." />
-              </FormControl>
+            <FormItem className="flex flex-col">
+              <FormLabel>Job Type</FormLabel>
+              <RadioGroup
+                onValueChange={field.onChange}
+                value={field.value ?? ''}
+                className="flex gap-4"
+              >
+                {Object.entries(JOB_TYPES).map(([key, label]) => (
+                  <FormItem key={key} className="flex items-center space-x-2 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value={key} />
+                    </FormControl>
+                    <FormLabel className="font-normal">{label}</FormLabel>
+                  </FormItem>
+                ))}
+              </RadioGroup>
               <FormMessage />
             </FormItem>
           )}
@@ -224,9 +304,9 @@ export function JobPostForm({ editPost, onSuccess }: JobPostFormProps) {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Job Description *</FormLabel>
+              <FormLabel id="job-description-label">Job Description *</FormLabel>
               <FormControl>
-                <Textarea {...field} rows={10} placeholder="Paste the full job description here..." />
+                <TiptapEditor field={field} />
               </FormControl>
               <FormMessage />
             </FormItem>

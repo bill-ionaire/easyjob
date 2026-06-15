@@ -483,6 +483,8 @@ model JobPost {
   postedAt     DateTime
   postedBy     String
   sourceUrl    String?
+  jobType      String?
+  jobSource    String?
   status       String           @default("active")
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt

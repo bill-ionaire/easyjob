@@ -36,7 +36,7 @@ export const jobPostResolvers = {
 
       const [items, total] = await Promise.all([
         ctx.prisma.jobPost.findMany({
-          where, skip, take: limit, orderBy: { postedAt: 'desc' },
+          where, skip, take: limit, orderBy: { updatedAt: 'desc' },
           include: {
             _count: { select: { applications: true } },
             applications: { select: { jobProfileId: true } },

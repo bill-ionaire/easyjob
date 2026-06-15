@@ -8,6 +8,8 @@ export const jobPostTypeDefs = /* GraphQL */ `
     postedAt: String!
     postedBy: String!
     sourceUrl: String
+    jobType: String
+    jobSource: String
     status: String!
     createdAt: String!
     updatedAt: String!
@@ -39,6 +41,8 @@ export const jobPostTypeDefs = /* GraphQL */ `
     postedAt: String!
     postedBy: String!
     sourceUrl: String
+    jobType: String
+    jobSource: String
   }
 
   input UpdateJobPostInput {
@@ -49,6 +53,8 @@ export const jobPostTypeDefs = /* GraphQL */ `
     postedAt: String
     postedBy: String
     sourceUrl: String
+    jobType: String
+    jobSource: String
     status: String
   }
 
