@@ -177,7 +177,7 @@ export function JobPostForm({ editPost, onSuccess }: JobPostFormProps) {
       location: selectedLocation?.label ?? data.location ?? null,
       sourceUrl: data.sourceUrl || null,
       jobType: data.jobType || null,
-      jobSource: selectedJobSource?.label ?? data.jobSource || null,
+      jobSource: (selectedJobSource?.label ?? data.jobSource) || null,
     }
 
     if (editPost) {
