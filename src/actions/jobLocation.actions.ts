@@ -89,28 +89,6 @@ export const deleteJobLocationById = async (
       throw new Error("Not authenticated");
     }
 
-    const experiences = await prisma.workExperience.count({
-      where: {
-        locationId,
-      },
-    });
-    if (experiences > 0) {
-      throw new Error(
-        `Job location cannot be deleted due to its use in experience section of one of the resume! `
-      );
-    }
-
-    const educations = await prisma.education.count({
-      where: {
-        locationId,
-      },
-    });
-    if (educations > 0) {
-      throw new Error(
-        `Job location cannot be deleted due to its use in education section of one of the resume! `
-      );
-    }
-
     const jobs = await prisma.job.count({
       where: {
         locationId,

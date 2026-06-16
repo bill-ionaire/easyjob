@@ -24,6 +24,7 @@ import {
 import { Input } from "../ui/input";
 import { Resume } from "@/models/profile.model";
 import { toast } from "../ui/use-toast";
+import { createResume, editResume } from "@/actions/profile.actions";
 
 type CreateResumeProps = {
   resumeDialogOpen: boolean;
@@ -47,9 +48,7 @@ function CreateResume({
   const form = useForm<z.infer<typeof CreateResumeFormSchema>>({
     resolver: zodResolver(CreateResumeFormSchema),
     mode: "onChange",
-    defaultValues: {
-      title: "",
-    },
+    defaultValues: { title: "" },
   });
 
   const {
@@ -63,28 +62,16 @@ function CreateResume({
     reset({
       id: resumeToEdit?.id ?? undefined,
       title: resumeToEdit?.title ?? "",
-      fileId: resumeToEdit?.FileId ?? undefined,
     });
   }, [resumeToEdit, reset]);
 
   const onSubmit = (data: z.infer<typeof CreateResumeFormSchema>) => {
-    const formData = new FormData();
-    formData.append("file", data.file as File);
-    formData.append("title", data.title);
-    if (resumeToEdit) {
-      formData.append("id", data.id as string);
-      if (resumeToEdit.FileId) {
-        formData.append("fileId", data.fileId as string);
-      }
-    }
-
     startTransition(async () => {
-      const res = await fetch("/api/profile/resume", {
-        method: "POST",
-        body: formData,
-      });
-      const response = await res.json();
-      if (!response.success) {
+      const response = resumeToEdit?.id
+        ? await editResume(resumeToEdit.id, data.title)
+        : await createResume(data.title);
+
+      if (!response?.success) {
         toast({
           variant: "destructive",
           title: "Error!",
@@ -121,7 +108,6 @@ function CreateResume({
             }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2"
           >
-            {/* RESUME TITLE */}
             <div className="md:col-span-2">
               <FormField
                 control={form.control}
@@ -140,35 +126,6 @@ function CreateResume({
                       {errors.title && (
                         <span className="text-red-500">
                           {errors.title.message}
-                        </span>
-                      )}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* RESUME FILE */}
-            <div className="md:col-span-2">
-              <FormField
-                control={form.control}
-                name="file"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Upload Resume (Optional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        onChange={(e) => {
-                          field.onChange(e.target.files?.[0] || null);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage>
-                      {errors.file?.message && (
-                        <span className="text-red-500">
-                          {errors.file.message}
                         </span>
                       )}
                     </FormMessage>

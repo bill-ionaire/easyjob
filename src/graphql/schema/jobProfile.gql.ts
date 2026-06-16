@@ -2,6 +2,7 @@ export const jobProfileTypeDefs = /* GraphQL */ `
   type JobProfile {
     id: ID!
     name: String!
+    email: String!
     linkedin: String
     phone: String
     github: String
@@ -15,17 +16,33 @@ export const jobProfileTypeDefs = /* GraphQL */ `
     resumeDraftCount: Int!
   }
 
-  type ProfileResumeDraft {
+  type ResumeDraft {
     id: ID!
-    jobProfileId: ID!
+    jobProfileId: ID
     title: String!
-    cvData: JSON!
+    summary: String
+    contactInfo: JSON
+    skills: JSON
+    experiences: JSON
+    educations: JSON
+    certifications: JSON
     createdAt: String!
     updatedAt: String!
   }
 
+  input ResumeDraftInput {
+    title: String
+    summary: String
+    contactInfo: JSON
+    skills: JSON
+    experiences: JSON
+    educations: JSON
+    certifications: JSON
+  }
+
   input CreateJobProfileInput {
     name: String!
+    email: String!
     linkedin: String
     phone: String
     github: String
@@ -37,6 +54,7 @@ export const jobProfileTypeDefs = /* GraphQL */ `
 
   input UpdateJobProfileInput {
     name: String
+    email: String
     linkedin: String
     phone: String
     github: String
@@ -49,15 +67,16 @@ export const jobProfileTypeDefs = /* GraphQL */ `
   extend type Query {
     jobProfiles: [JobProfile!]!
     jobProfile(id: ID!): JobProfile
-    profileResumeDrafts(profileId: ID!): [ProfileResumeDraft!]!
+    profileResumeDrafts(profileId: ID!): [ResumeDraft!]!
+    resumeDraft(id: ID!): ResumeDraft
   }
 
   extend type Mutation {
     createJobProfile(input: CreateJobProfileInput!): JobProfile!
     updateJobProfile(id: ID!, input: UpdateJobProfileInput!): JobProfile!
     deleteJobProfile(id: ID!): Boolean!
-    createProfileResumeDraft(profileId: ID!, title: String!, cvData: JSON): ProfileResumeDraft!
-    updateProfileResumeDraft(id: ID!, title: String, cvData: JSON): ProfileResumeDraft!
+    createProfileResumeDraft(profileId: ID!, input: ResumeDraftInput!): ResumeDraft!
+    updateProfileResumeDraft(id: ID!, input: ResumeDraftInput!): ResumeDraft!
     deleteProfileResumeDraft(id: ID!): Boolean!
   }
 `

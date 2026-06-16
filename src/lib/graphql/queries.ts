@@ -151,7 +151,6 @@ export const JOB_APPLICATION_QUERY = gql`
     jobApplication(id: $id) {
       id
       currentStatus
-      cvData
       cvGenerationStatus
       coverLetter
       notes
@@ -254,7 +253,6 @@ export const UPDATE_APPLICATION = gql`
       id
       coverLetter
       notes
-      cvData
       jobProfile {
         id
         name
@@ -302,6 +300,7 @@ export const JOB_PROFILES_QUERY = gql`
     jobProfiles {
       id
       name
+      email
       linkedin
       phone
       github
@@ -316,40 +315,40 @@ export const JOB_PROFILES_QUERY = gql`
   }
 `
 
+const RESUME_DRAFT_FIELDS = /* GraphQL */ `
+  id
+  jobProfileId
+  title
+  summary
+  contactInfo
+  skills
+  experiences
+  educations
+  certifications
+  createdAt
+  updatedAt
+`
+
 export const PROFILE_RESUME_DRAFTS_QUERY = gql`
   query ProfileResumeDrafts($profileId: ID!) {
     profileResumeDrafts(profileId: $profileId) {
-      id
-      jobProfileId
-      title
-      cvData
-      createdAt
-      updatedAt
+      ${RESUME_DRAFT_FIELDS}
     }
   }
 `
 
 export const CREATE_PROFILE_RESUME_DRAFT = gql`
-  mutation CreateProfileResumeDraft($profileId: ID!, $title: String!, $cvData: JSON) {
-    createProfileResumeDraft(profileId: $profileId, title: $title, cvData: $cvData) {
-      id
-      jobProfileId
-      title
-      cvData
-      createdAt
-      updatedAt
+  mutation CreateProfileResumeDraft($profileId: ID!, $input: ResumeDraftInput!) {
+    createProfileResumeDraft(profileId: $profileId, input: $input) {
+      ${RESUME_DRAFT_FIELDS}
     }
   }
 `
 
 export const UPDATE_PROFILE_RESUME_DRAFT = gql`
-  mutation UpdateProfileResumeDraft($id: ID!, $title: String, $cvData: JSON) {
-    updateProfileResumeDraft(id: $id, title: $title, cvData: $cvData) {
-      id
-      jobProfileId
-      title
-      cvData
-      updatedAt
+  mutation UpdateProfileResumeDraft($id: ID!, $input: ResumeDraftInput!) {
+    updateProfileResumeDraft(id: $id, input: $input) {
+      ${RESUME_DRAFT_FIELDS}
     }
   }
 `
@@ -357,6 +356,14 @@ export const UPDATE_PROFILE_RESUME_DRAFT = gql`
 export const DELETE_PROFILE_RESUME_DRAFT = gql`
   mutation DeleteProfileResumeDraft($id: ID!) {
     deleteProfileResumeDraft(id: $id)
+  }
+`
+
+export const RESUME_DRAFT_QUERY = gql`
+  query ResumeDraft($id: ID!) {
+    resumeDraft(id: $id) {
+      ${RESUME_DRAFT_FIELDS}
+    }
   }
 `
 
@@ -375,6 +382,7 @@ export const UPDATE_JOB_PROFILE = gql`
     updateJobProfile(id: $id, input: $input) {
       id
       name
+      email
       linkedin
       phone
       github

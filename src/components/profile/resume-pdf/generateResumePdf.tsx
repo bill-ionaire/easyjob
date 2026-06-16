@@ -1,5 +1,5 @@
 import React from "react";
-import { Resume, SectionType } from "@/models/profile.model";
+import { Resume } from "@/models/profile.model";
 import { htmlToPdfNodes } from "./html-to-pdf";
 import { ProfessionalResumeDocument } from "./ProfessionalTemplate";
 
@@ -22,27 +22,14 @@ export function sanitizeFilename(name: string): string {
 export async function generateResumePdfBlob(
   resume: Resume,
 ): Promise<{ blob: Blob; filename: string }> {
-  // Parse HTML in the browser main thread before entering react-pdf's rendering context
-  const summarySection = resume.ResumeSections?.find(
-    (s) => s.sectionType === SectionType.SUMMARY,
-  );
-  const experienceSection = resume.ResumeSections?.find(
-    (s) => s.sectionType === SectionType.EXPERIENCE,
-  );
-  const educationSection = resume.ResumeSections?.find(
-    (s) => s.sectionType === SectionType.EDUCATION,
-  );
-
   const htmlNodes: ResumeHtmlNodes = {
-    summary: summarySection?.summary?.content
-      ? htmlToPdfNodes(summarySection.summary.content)
-      : [],
+    summary: resume.summary ? htmlToPdfNodes(resume.summary) : [],
     experiences:
-      experienceSection?.workExperiences?.map((exp) =>
+      resume.experiences?.map((exp) =>
         exp.description ? htmlToPdfNodes(exp.description) : [],
       ) ?? [],
     educations:
-      educationSection?.educations?.map((edu) =>
+      resume.educations?.map((edu) =>
         edu.description ? htmlToPdfNodes(edu.description) : [],
       ) ?? [],
   };

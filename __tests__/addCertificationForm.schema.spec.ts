@@ -15,8 +15,6 @@ describe("AddCertificationFormSchema", () => {
       const data = {
         id: "cert-1",
         resumeId: "resume-1",
-        sectionId: "section-1",
-        sectionTitle: "Certifications",
         title: "AWS Certified Solutions Architect",
         organization: "Amazon Web Services",
         issueDate,
@@ -30,12 +28,6 @@ describe("AddCertificationFormSchema", () => {
       expect(result.issueDate).toEqual(issueDate);
       expect(result.expirationDate).toEqual(expirationDate);
       expect(result.credentialUrl).toBe("https://www.credly.com/badges/abc123");
-    });
-
-    it("should default sectionTitle to 'Certifications'", () => {
-      const data = { title: "AWS SAA", organization: "Amazon" };
-      const result = AddCertificationFormSchema.parse(data);
-      expect(result.sectionTitle).toBe("Certifications");
     });
 
     it("should default noExpiration to false", () => {

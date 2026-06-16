@@ -1,30 +1,20 @@
 import { convertResumeToText } from "@/lib/ai/tools/preprocessing";
-import { Resume, SectionType } from "@/models/profile.model";
+import { Resume } from "@/models/profile.model";
 
 // Minimal resume fixture shared across tests
 const baseResume: Resume = {
   id: "resume-1",
   title: "My Resume",
-  ResumeSections: [],
 };
 
 describe("convertResumeToText - certification sections", () => {
   it("includes certification section with title and organization", async () => {
     const resume: Resume = {
       ...baseResume,
-      ResumeSections: [
+      certifications: [
         {
-          id: "sec-1",
-          resumeId: "resume-1",
-          sectionTitle: "Certifications",
-          sectionType: SectionType.CERTIFICATION,
-          licenseOrCertifications: [
-            {
-              id: "cert-1",
-              title: "AWS Certified Solutions Architect",
-              organization: "Amazon Web Services",
-            },
-          ],
+          title: "AWS Certified Solutions Architect",
+          organization: "Amazon Web Services",
         },
       ],
     };
@@ -38,21 +28,12 @@ describe("convertResumeToText - certification sections", () => {
   it("includes issue and expiration dates when present", async () => {
     const resume: Resume = {
       ...baseResume,
-      ResumeSections: [
+      certifications: [
         {
-          id: "sec-1",
-          resumeId: "resume-1",
-          sectionTitle: "Certifications",
-          sectionType: SectionType.CERTIFICATION,
-          licenseOrCertifications: [
-            {
-              id: "cert-1",
-              title: "AWS SAA",
-              organization: "AWS",
-              issueDate: new Date("2023-06-01"),
-              expirationDate: new Date("2026-06-01"),
-            },
-          ],
+          title: "AWS SAA",
+          organization: "AWS",
+          issueDate: new Date("2023-06-01"),
+          expirationDate: new Date("2026-06-01"),
         },
       ],
     };
@@ -65,20 +46,11 @@ describe("convertResumeToText - certification sections", () => {
   it("shows 'No Expiration' when issueDate present but no expirationDate", async () => {
     const resume: Resume = {
       ...baseResume,
-      ResumeSections: [
+      certifications: [
         {
-          id: "sec-1",
-          resumeId: "resume-1",
-          sectionTitle: "Certifications",
-          sectionType: SectionType.CERTIFICATION,
-          licenseOrCertifications: [
-            {
-              id: "cert-1",
-              title: "AWS SAA",
-              organization: "AWS",
-              issueDate: new Date("2023-06-01"),
-            },
-          ],
+          title: "AWS SAA",
+          organization: "AWS",
+          issueDate: new Date("2023-06-01"),
         },
       ],
     };
@@ -90,19 +62,10 @@ describe("convertResumeToText - certification sections", () => {
   it("omits date lines when no issueDate is provided", async () => {
     const resume: Resume = {
       ...baseResume,
-      ResumeSections: [
+      certifications: [
         {
-          id: "sec-1",
-          resumeId: "resume-1",
-          sectionTitle: "Certifications",
-          sectionType: SectionType.CERTIFICATION,
-          licenseOrCertifications: [
-            {
-              id: "cert-1",
-              title: "AWS SAA",
-              organization: "AWS",
-            },
-          ],
+          title: "AWS SAA",
+          organization: "AWS",
         },
       ],
     };
@@ -116,20 +79,11 @@ describe("convertResumeToText - certification sections", () => {
   it("includes credential URL when present", async () => {
     const resume: Resume = {
       ...baseResume,
-      ResumeSections: [
+      certifications: [
         {
-          id: "sec-1",
-          resumeId: "resume-1",
-          sectionTitle: "Certifications",
-          sectionType: SectionType.CERTIFICATION,
-          licenseOrCertifications: [
-            {
-              id: "cert-1",
-              title: "AWS SAA",
-              organization: "AWS",
-              credentialUrl: "https://credly.com/badges/abc",
-            },
-          ],
+          title: "AWS SAA",
+          organization: "AWS",
+          credentialUrl: "https://credly.com/badges/abc",
         },
       ],
     };
@@ -138,64 +92,22 @@ describe("convertResumeToText - certification sections", () => {
     expect(text).toContain("Credential URL: https://credly.com/badges/abc");
   });
 
-  it("handles license section type with correct heading", async () => {
+  it("omits certification section when certifications is empty", async () => {
     const resume: Resume = {
       ...baseResume,
-      ResumeSections: [
-        {
-          id: "sec-1",
-          resumeId: "resume-1",
-          sectionTitle: "Licenses",
-          sectionType: SectionType.LICENSE,
-          licenseOrCertifications: [
-            {
-              id: "lic-1",
-              title: "Professional Engineer",
-              organization: "APEGA",
-            },
-          ],
-        },
-      ],
-    };
-
-    const text = await convertResumeToText(resume);
-    expect(text).toContain("## LICENSES");
-    expect(text).toContain("Title: Professional Engineer");
-    expect(text).toContain("Organization: APEGA");
-  });
-
-  it("omits certification section when licenseOrCertifications is empty", async () => {
-    const resume: Resume = {
-      ...baseResume,
-      ResumeSections: [
-        {
-          id: "sec-1",
-          resumeId: "resume-1",
-          sectionTitle: "Certifications",
-          sectionType: SectionType.CERTIFICATION,
-          licenseOrCertifications: [],
-        },
-      ],
+      certifications: [],
     };
 
     const text = await convertResumeToText(resume);
     expect(text).not.toContain("## CERTIFICATIONS");
   });
 
-  it("includes multiple certifications in the same section", async () => {
+  it("includes multiple certifications", async () => {
     const resume: Resume = {
       ...baseResume,
-      ResumeSections: [
-        {
-          id: "sec-1",
-          resumeId: "resume-1",
-          sectionTitle: "Certifications",
-          sectionType: SectionType.CERTIFICATION,
-          licenseOrCertifications: [
-            { id: "cert-1", title: "AWS SAA", organization: "Amazon" },
-            { id: "cert-2", title: "GCP Associate", organization: "Google" },
-          ],
-        },
+      certifications: [
+        { title: "AWS SAA", organization: "Amazon" },
+        { title: "GCP Associate", organization: "Google" },
       ],
     };
 
@@ -206,26 +118,12 @@ describe("convertResumeToText - certification sections", () => {
     expect(text).toContain("Organization: Google");
   });
 
-  it("includes certifications alongside other sections", async () => {
+  it("includes certifications alongside summary", async () => {
     const resume: Resume = {
       ...baseResume,
-      ResumeSections: [
-        {
-          id: "sec-sum",
-          resumeId: "resume-1",
-          sectionTitle: "Summary",
-          sectionType: SectionType.SUMMARY,
-          summary: { content: "Experienced engineer." },
-        },
-        {
-          id: "sec-cert",
-          resumeId: "resume-1",
-          sectionTitle: "Certifications",
-          sectionType: SectionType.CERTIFICATION,
-          licenseOrCertifications: [
-            { id: "cert-1", title: "AWS SAA", organization: "Amazon" },
-          ],
-        },
+      summary: "Experienced engineer.",
+      certifications: [
+        { title: "AWS SAA", organization: "Amazon" },
       ],
     };
 

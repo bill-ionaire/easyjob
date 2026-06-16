@@ -233,107 +233,57 @@ export const generateMockProfileDataAction = async (): Promise<any> => {
     });
     const jobTitleMap = new Map(jobTitles.map((jt) => [jt.value, jt.id]));
 
-    // 4. Find or create profile for the user
-    let profile = await prisma.profile.findFirst({
-      where: { userId: user.id },
-    });
-    if (!profile) {
-      profile = await prisma.profile.create({ data: { userId: user.id } });
-    }
-
-    // 5. Create resumes, skipping any that already exist
+    // 4. Create resumes, skipping any that already exist
     let created = 0;
     let skipped = 0;
 
     for (const person of mockResumePeople) {
       const existing = await prisma.resume.findFirst({
-        where: { profileId: profile.id, title: person.resumeTitle },
+        where: { userId: user.id, title: person.resumeTitle },
       });
       if (existing) {
         skipped++;
         continue;
       }
 
-      const resume = await prisma.resume.create({
-        data: { profileId: profile.id, title: person.resumeTitle },
-      });
+      const experiences = person.workHistory.map((entry) => ({
+        id: crypto.randomUUID(),
+        company: companyMap.get(entry.company) ? mockCompanies.find((c) => c.value === entry.company)?.label ?? entry.company : entry.company,
+        jobTitle: mockJobTitles.find((jt) => jt.value === entry.jobTitleValue)?.label ?? entry.jobTitleValue,
+        location: mockLocations.find((l) => l.value === entry.location)?.label ?? entry.location,
+        startDate: subYears(new Date(), entry.startYearsAgo),
+        endDate: entry.endYearsAgo === null ? null : subYears(new Date(), entry.endYearsAgo),
+        description: entry.description,
+        currentJob: entry.endYearsAgo === null,
+      }));
 
-      // Contact info
-      await prisma.contactInfo.create({
+      const educationLocation = mockLocations.find((l) => l.value === person.education.location)?.label ?? person.education.location;
+
+      await prisma.resume.create({
         data: {
-          resumeId: resume.id,
-          firstName: person.firstName,
-          lastName: person.lastName,
-          headline: person.headline,
-          email: person.email,
-          phone: person.phone,
-          address: person.address,
-        },
-      });
-
-      // Summary section
-      const summary = await prisma.summary.create({
-        data: { content: person.summary },
-      });
-      await prisma.resumeSection.create({
-        data: {
-          resumeId: resume.id,
-          sectionTitle: "Summary",
-          sectionType: "summary",
-          summaryId: summary.id,
-        },
-      });
-
-      // Work experience section
-      const workSection = await prisma.resumeSection.create({
-        data: {
-          resumeId: resume.id,
-          sectionTitle: "Work Experience",
-          sectionType: "experience",
-        },
-      });
-
-      for (const entry of person.workHistory) {
-        const companyId = companyMap.get(entry.company)!;
-        const jobTitleId = jobTitleMap.get(entry.jobTitleValue)!;
-        const locationId = locationMap.get(entry.location)!;
-        const startDate = subYears(new Date(), entry.startYearsAgo);
-        const endDate =
-          entry.endYearsAgo === null
-            ? null
-            : subYears(new Date(), entry.endYearsAgo);
-
-        await prisma.workExperience.create({
-          data: {
-            companyId,
-            jobTitleId,
-            locationId,
-            startDate,
-            endDate,
-            description: entry.description,
-            resumeSectionId: workSection.id,
+          userId: user.id,
+          title: person.resumeTitle,
+          summary: person.summary,
+          contactInfo: {
+            firstName: person.firstName,
+            lastName: person.lastName,
+            headline: person.headline,
+            email: person.email,
+            phone: person.phone,
+            address: person.address,
           },
-        });
-      }
-
-      // Education section
-      const educationSection = await prisma.resumeSection.create({
-        data: {
-          resumeId: resume.id,
-          sectionTitle: "Education",
-          sectionType: "education",
-        },
-      });
-
-      await prisma.education.create({
-        data: {
-          institution: person.education.institution,
-          degree: person.education.degree,
-          fieldOfStudy: person.education.fieldOfStudy,
-          startDate: new Date(`${person.education.startYear}-09-01`),
-          endDate: new Date(`${person.education.endYear}-05-01`),
-          locationId: locationMap.get(person.education.location)!,
-          resumeSectionId: educationSection.id,
+          experiences,
+          educations: [{
+            id: crypto.randomUUID(),
+            institution: person.education.institution,
+            degree: person.education.degree,
+            fieldOfStudy: person.education.fieldOfStudy,
+            location: educationLocation,
+            startDate: new Date(`${person.education.startYear}-09-01`),
+            endDate: new Date(`${person.education.endYear}-05-01`),
+          }],
+          skills: [],
+          certifications: [],
         },
       });
 
@@ -361,48 +311,12 @@ export const clearMockProfileDataAction = async (): Promise<any> => {
     }
 
     // Find mock resumes belonging to the user
-    const mockResumes = await prisma.resume.findMany({
+    const { count: resumeCount } = await prisma.resume.deleteMany({
       where: {
         title: { contains: "[MOCK_DATA]" },
-        profile: { userId: user.id },
-      },
-      include: {
-        ResumeSections: { select: { id: true, summaryId: true } },
+        userId: user.id,
       },
     });
-
-    const resumeIds = mockResumes.map((r) => r.id);
-    const sectionIds = mockResumes.flatMap((r) =>
-      r.ResumeSections.map((s) => s.id),
-    );
-    const summaryIds = mockResumes
-      .flatMap((r) => r.ResumeSections)
-      .filter((s) => s.summaryId)
-      .map((s) => s.summaryId!);
-
-    // Delete child records first to satisfy FK constraints
-    await prisma.workExperience.deleteMany({
-      where: { resumeSectionId: { in: sectionIds } },
-    });
-    await prisma.education.deleteMany({
-      where: { resumeSectionId: { in: sectionIds } },
-    });
-    await prisma.licenseOrCertification.deleteMany({
-      where: { resumeSectionId: { in: sectionIds } },
-    });
-    await prisma.otherSection.deleteMany({
-      where: { resumeSectionId: { in: sectionIds } },
-    });
-    await prisma.resumeSection.deleteMany({
-      where: { id: { in: sectionIds } },
-    });
-    if (summaryIds.length > 0) {
-      await prisma.summary.deleteMany({ where: { id: { in: summaryIds } } });
-    }
-    await prisma.contactInfo.deleteMany({
-      where: { resumeId: { in: resumeIds } },
-    });
-    await prisma.resume.deleteMany({ where: { id: { in: resumeIds } } });
 
     // Remove mock companies, locations, job titles (best-effort)
     const [deletedCompanies, deletedLocations, deletedJobTitles] =
@@ -442,7 +356,7 @@ export const clearMockProfileDataAction = async (): Promise<any> => {
 
     return {
       success: true,
-      message: `Deleted ${resumeIds.length} resumes, ${companiesCount} companies, ${locationsCount} locations, ${titlesCount} job titles.`,
+      message: `Deleted ${resumeCount} resumes, ${companiesCount} companies, ${locationsCount} locations, ${titlesCount} job titles.`,
     };
   } catch (error) {
     return handleError(error, "Failed to clear mock profile data");
@@ -510,7 +424,7 @@ export const generateMockJobsAction = async (): Promise<any> => {
         prisma.resume.findMany({
           where: {
             title: { contains: "[MOCK_DATA]" },
-            profile: { userId: user.id },
+            userId: user.id,
           },
         }),
         prisma.jobSource.findMany({
@@ -618,7 +532,6 @@ export const clearMockJobsAction = async (): Promise<any> => {
     }
 
     // Delete related records first (FK constraints)
-    await prisma.note.deleteMany({ where: { jobId: { in: jobIds } } });
     await prisma.interview.deleteMany({ where: { jobId: { in: jobIds } } });
 
     // Disconnect tags (M2M)

@@ -1,14 +1,10 @@
 import { getResumeById } from "@/actions/profile.actions";
-import ResumeContainer from "@/components/profile/ResumeContainer";
+import { ResumePageView } from "@/components/profile/ResumePageView";
+import { notFound } from "next/navigation";
 
-async function ResumePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ResumePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { data: resume } = await getResumeById(id);
-  return (
-    <div className="col-span-3">
-      <ResumeContainer resume={resume} />
-    </div>
-  );
+  const result = await getResumeById(id);
+  if (!result?.success || !result.data) notFound();
+  return <ResumePageView resume={result.data} />;
 }
-
-export default ResumePage;

@@ -5,7 +5,6 @@ import {
 } from "@/actions/profile.actions";
 import { screen, render, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ResumeSection } from "@/models/profile.model";
 import { toast } from "@/components/ui/use-toast";
 
 vi.mock("@/actions/profile.actions", () => ({
@@ -53,30 +52,20 @@ describe("AddResumeSummary Component", () => {
     expect(screen.getByText("Add Summary")).toBeInTheDocument();
   });
 
-  it("should render Edit Summary dialog when summaryToEdit is provided", () => {
-    const mockSummaryToEdit: ResumeSection = {
-      id: "summary-1",
-      resumeId: mockResumeId,
-      sectionTitle: "Professional Summary",
-      sectionType: "summary" as any,
-      summary: {
-        content: "Experienced software developer",
-      },
-    };
-
+  it("should render Edit Summary dialog when summaryContent is provided", () => {
     render(
       <AddResumeSummary
         resumeId={mockResumeId}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
-        summaryToEdit={mockSummaryToEdit}
+        summaryContent="Experienced software developer"
       />
     );
 
     expect(screen.getByText("Edit Summary")).toBeInTheDocument();
   });
 
-  it("should render all form fields correctly", () => {
+  it("should render form fields correctly", () => {
     render(
       <AddResumeSummary
         resumeId={mockResumeId}
@@ -85,37 +74,23 @@ describe("AddResumeSummary Component", () => {
       />
     );
 
-    expect(screen.getByLabelText(/section title/i)).toBeInTheDocument();
     expect(screen.getByText(/resume summary/i)).toBeInTheDocument();
     expect(screen.getByTestId("tiptap-editor")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
   });
 
-  it("should populate form fields when editing a summary", () => {
-    const mockSummaryToEdit: ResumeSection = {
-      id: "summary-1",
-      resumeId: mockResumeId,
-      sectionTitle: "Professional Summary",
-      sectionType: "summary" as any,
-      summary: {
-        content: "Experienced software developer with 5+ years",
-      },
-    };
-
+  it("should populate editor when editing a summary", () => {
     render(
       <AddResumeSummary
         resumeId={mockResumeId}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
-        summaryToEdit={mockSummaryToEdit}
+        summaryContent="Experienced software developer with 5+ years"
       />
     );
 
-    const sectionTitleInput = screen.getByLabelText(/section title/i);
     const contentEditor = screen.getByTestId("tiptap-editor");
-
-    expect(sectionTitleInput).toHaveValue("Professional Summary");
     expect(contentEditor).toHaveValue(
       "Experienced software developer with 5+ years"
     );
@@ -163,11 +138,7 @@ describe("AddResumeSummary Component", () => {
       />
     );
 
-    const sectionTitleInput = screen.getByLabelText(/section title/i);
     const contentEditor = screen.getByTestId("tiptap-editor");
-
-    await user.clear(sectionTitleInput);
-    await user.type(sectionTitleInput, "Career Summary");
 
     fireEvent.change(contentEditor, {
       target: { value: "Experienced professional with strong skills" },
@@ -180,7 +151,6 @@ describe("AddResumeSummary Component", () => {
       expect(addResumeSummary).toHaveBeenCalledTimes(1);
       expect(addResumeSummary).toHaveBeenCalledWith(
         expect.objectContaining({
-          sectionTitle: "Career Summary",
           content: "Experienced professional with strong skills",
         })
       );
@@ -188,16 +158,6 @@ describe("AddResumeSummary Component", () => {
   });
 
   it("should call updateResumeSummary when editing an existing summary", async () => {
-    const mockSummaryToEdit: ResumeSection = {
-      id: "summary-1",
-      resumeId: mockResumeId,
-      sectionTitle: "Professional Summary",
-      sectionType: "summary" as any,
-      summary: {
-        content: "Experienced software developer",
-      },
-    };
-
     (updateResumeSummary as any).mockResolvedValue({
       success: true,
       message: "Summary updated successfully",
@@ -208,31 +168,24 @@ describe("AddResumeSummary Component", () => {
         resumeId={mockResumeId}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
-        summaryToEdit={mockSummaryToEdit}
+        summaryContent="Experienced software developer"
       />
     );
 
-    const sectionTitleInput = screen.getByLabelText(/section title/i);
-    await user.clear(sectionTitleInput);
-    await user.type(sectionTitleInput, "Updated Professional Summary");
+    const contentEditor = screen.getByTestId("tiptap-editor");
+    fireEvent.change(contentEditor, {
+      target: { value: "Updated professional summary content here" },
+    });
 
     const saveButton = screen.getByRole("button", { name: /save/i });
     await user.click(saveButton);
 
     await waitFor(() => {
       expect(updateResumeSummary).toHaveBeenCalledTimes(1);
-      expect(updateResumeSummary).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: "summary-1",
-          sectionTitle: "Updated Professional Summary",
-        })
-      );
     });
   });
 
   it("should close dialog and show success toast on successful submission", async () => {
-
-
     (addResumeSummary as any).mockResolvedValue({
       success: true,
       message: "Summary created successfully",
@@ -246,12 +199,7 @@ describe("AddResumeSummary Component", () => {
       />
     );
 
-    const sectionTitleInput = screen.getByLabelText(/section title/i);
     const contentEditor = screen.getByTestId("tiptap-editor");
-
-    await user.clear(sectionTitleInput);
-    await user.type(sectionTitleInput, "Career Summary");
-
     fireEvent.change(contentEditor, {
       target: { value: "Experienced professional with strong skills" },
     });
@@ -271,8 +219,6 @@ describe("AddResumeSummary Component", () => {
   });
 
   it("should show error toast on failed submission", async () => {
-
-
     (addResumeSummary as any).mockResolvedValue({
       success: false,
       message: "Failed to create summary",
@@ -286,12 +232,7 @@ describe("AddResumeSummary Component", () => {
       />
     );
 
-    const sectionTitleInput = screen.getByLabelText(/section title/i);
     const contentEditor = screen.getByTestId("tiptap-editor");
-
-    await user.clear(sectionTitleInput);
-    await user.type(sectionTitleInput, "Career Summary");
-
     fireEvent.change(contentEditor, {
       target: { value: "Experienced professional with strong skills" },
     });
@@ -311,59 +252,7 @@ describe("AddResumeSummary Component", () => {
     });
   });
 
-  it("should display loading indicator when form is submitting", async () => {
-    (addResumeSummary as any).mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve({ success: true }), 100);
-        })
-    );
-
-    render(
-      <AddResumeSummary
-        resumeId={mockResumeId}
-        dialogOpen={true}
-        setDialogOpen={mockSetDialogOpen}
-      />
-    );
-
-    const sectionTitleInput = screen.getByLabelText(/section title/i);
-    const contentEditor = screen.getByTestId("tiptap-editor");
-
-    await user.clear(sectionTitleInput);
-    await user.type(sectionTitleInput, "Career Summary");
-
-    fireEvent.change(contentEditor, {
-      target: { value: "Experienced professional with strong skills" },
-    });
-
-    const saveButton = screen.getByRole("button", { name: /save/i });
-    await user.click(saveButton);
-
-    // Check if the loader icon is present
-    const loader = screen
-      .getByText(/save/i)
-      .parentElement?.querySelector(".spinner");
-    expect(loader).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(addResumeSummary).toHaveBeenCalledTimes(1);
-    });
-  });
-
   it("should show updated success message when editing", async () => {
-
-
-    const mockSummaryToEdit: ResumeSection = {
-      id: "summary-1",
-      resumeId: mockResumeId,
-      sectionTitle: "Professional Summary",
-      sectionType: "summary" as any,
-      summary: {
-        content: "Experienced software developer",
-      },
-    };
-
     (updateResumeSummary as any).mockResolvedValue({
       success: true,
       message: "Summary updated successfully",
@@ -374,13 +263,14 @@ describe("AddResumeSummary Component", () => {
         resumeId={mockResumeId}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
-        summaryToEdit={mockSummaryToEdit}
+        summaryContent="Experienced software developer"
       />
     );
 
-    const sectionTitleInput = screen.getByLabelText(/section title/i);
-    await user.clear(sectionTitleInput);
-    await user.type(sectionTitleInput, "Updated Professional Summary");
+    const contentEditor = screen.getByTestId("tiptap-editor");
+    fireEvent.change(contentEditor, {
+      target: { value: "Updated professional summary content here" },
+    });
 
     const saveButton = screen.getByRole("button", { name: /save/i });
     await user.click(saveButton);
@@ -396,7 +286,7 @@ describe("AddResumeSummary Component", () => {
   });
 
   it("should not render dialog when dialogOpen is false", () => {
-    const { container } = render(
+    render(
       <AddResumeSummary
         resumeId={mockResumeId}
         dialogOpen={false}

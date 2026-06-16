@@ -1,11 +1,8 @@
 import { z } from "zod";
 
 export const AddExperienceFormSchema = z.object({
-  id: z.string().optional(),
+  index: z.number().optional(),
   resumeId: z.string().optional(),
-  sectionId: z.string().optional(),
-  sectionTitle: z.string().default("Experience").optional(),
-  sectionType: z.string().optional(),
   title: z
     .string({
       error: "Job title is required.",
