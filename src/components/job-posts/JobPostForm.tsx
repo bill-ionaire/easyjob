@@ -110,7 +110,6 @@ export function JobPostForm({ editPost, onSuccess, onCancel }: JobPostFormProps)
       const companyList: any[] = Array.isArray(c) ? c : []
       const locationList: any[] = Array.isArray(l) ? l : []
       const sourceList: any[] = Array.isArray(s?.data) ? s.data : []
-
       if (editPost) {
         const matchedCompany = companyList.find((co) => co.label === editPost.postedBy)
         if (matchedCompany) {

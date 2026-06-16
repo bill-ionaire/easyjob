@@ -22,9 +22,6 @@ export const getCompanyList = async (
 
     const [data, total, rejectedCounts] = await Promise.all([
       prisma.company.findMany({
-        where: {
-          createdBy: user.id,
-        },
         skip,
         take: limit,
         ...(countBy
@@ -52,11 +49,7 @@ export const getCompanyList = async (
           },
         },
       }),
-      prisma.company.count({
-        where: {
-          createdBy: user.id,
-        },
-      }),
+      prisma.company.count(),
       countBy
         ? prisma.job.groupBy({
             by: ["companyId"],
@@ -100,12 +93,7 @@ export const getAllCompanies = async (): Promise<any | undefined> => {
       throw new Error("Not authenticated");
     }
 
-    const comapnies = await prisma.company.findMany({
-      where: {
-        createdBy: user.id,
-      },
-    });
-    return comapnies;
+    const comapnies = await prisma.company.findMany();    return comapnies;
   } catch (error) {
     const msg = "Failed to fetch all companies. ";
     return handleError(error, msg);
@@ -243,10 +231,7 @@ export const getCompanyById = async (
     }
 
     const company = await prisma.company.findUnique({
-      where: {
-        id: companyId,
-        createdBy: user.id,
-      },
+      where: { id: companyId },
     });
     return company;
   } catch (error) {

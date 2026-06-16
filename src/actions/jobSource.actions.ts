@@ -19,9 +19,6 @@ export const getJobSourceList = async (
 
     const [data, total] = await Promise.all([
       prisma.jobSource.findMany({
-        where: {
-          createdBy: user.id,
-        },
         skip,
         take: limit,
         ...(countBy
@@ -48,11 +45,7 @@ export const getJobSourceList = async (
           },
         },
       }),
-      prisma.jobSource.count({
-        where: {
-          createdBy: user.id,
-        },
-      }),
+      prisma.jobSource.count(),
     ]);
     return { data, total };
   } catch (error) {
