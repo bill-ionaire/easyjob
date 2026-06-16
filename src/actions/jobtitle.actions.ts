@@ -114,16 +114,6 @@ export const deleteJobTitleById = async (
       throw new Error("Not authenticated");
     }
 
-    const experiences = await prisma.workExperience.count({
-      where: {
-        jobTitleId,
-      },
-    });
-    if (experiences > 0) {
-      throw new Error(
-        `Job title cannot be deleted due to its use in experience section of one of the resume! `
-      );
-    }
     const jobs = await prisma.job.count({
       where: {
         jobTitleId,

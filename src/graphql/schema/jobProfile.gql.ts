@@ -17,11 +17,26 @@ export const jobProfileTypeDefs = /* GraphQL */ `
 
   type ResumeDraft {
     id: ID!
-    jobProfileId: ID!
+    jobProfileId: ID
     title: String!
-    cvData: JSON!
+    summary: String
+    contactInfo: JSON
+    skills: JSON
+    experiences: JSON
+    educations: JSON
+    certifications: JSON
     createdAt: String!
     updatedAt: String!
+  }
+
+  input ResumeDraftInput {
+    title: String
+    summary: String
+    contactInfo: JSON
+    skills: JSON
+    experiences: JSON
+    educations: JSON
+    certifications: JSON
   }
 
   input CreateJobProfileInput {
@@ -57,9 +72,8 @@ export const jobProfileTypeDefs = /* GraphQL */ `
     createJobProfile(input: CreateJobProfileInput!): JobProfile!
     updateJobProfile(id: ID!, input: UpdateJobProfileInput!): JobProfile!
     deleteJobProfile(id: ID!): Boolean!
-    createProfileResumeDraft(profileId: ID!, title: String!, cvData: JSON): ResumeDraft!
-    updateProfileResumeDraft(id: ID!, title: String, cvData: JSON): ResumeDraft!
+    createProfileResumeDraft(profileId: ID!, input: ResumeDraftInput!): ResumeDraft!
+    updateProfileResumeDraft(id: ID!, input: ResumeDraftInput!): ResumeDraft!
     deleteProfileResumeDraft(id: ID!): Boolean!
-    updateResumeCvData(id: ID!, cvData: JSON!): ResumeDraft!
   }
 `

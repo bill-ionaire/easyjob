@@ -1,34 +1,22 @@
-import { Company, JobLocation, JobTitle } from "./job.model";
-
 export interface Resume {
   id?: string;
-  profileId?: string;
+  userId?: string;
+  jobProfileId?: string;
   title: string;
+  summary?: string;
+  contactInfo?: ContactInfo;
+  skills?: SkillCategory[];
+  experiences?: WorkExperience[];
+  educations?: Education[];
+  certifications?: LicenseOrCertification[];
   createdAt?: Date;
   updatedAt?: Date;
-  ContactInfo?: ContactInfo;
-  ResumeSections?: ResumeSection[];
-  FileId?: string;
-  File?: File;
   _count?: {
     Job?: number;
   };
 }
 
-export interface File {
-  id?: string;
-  fileName: string;
-  filePath: string;
-  fileType: string;
-  uploadedAt?: Date;
-  Resume?: Resume;
-}
-
 export interface ContactInfo {
-  id?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  resumeId: string;
   firstName: string;
   lastName: string;
   headline: string;
@@ -37,81 +25,46 @@ export interface ContactInfo {
   address?: string;
 }
 
-export enum SectionType {
-  SUMMARY = "summary",
-  EXPERIENCE = "experience",
-  EDUCATION = "education",
-  LICENSE = "license",
-  CERTIFICATION = "certification",
-  COURSE = "course",
-  PROJECT = "project",
-  OTHER = "other",
+export interface SkillCategory {
+  id?: string;
+  label: string;
+  details: string[];
 }
 
-export interface Summary {
+export interface WorkExperience {
   id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  content: string;
+  company: string;
+  jobTitle: string;
+  location: string;
+  startDate: Date | string;
+  endDate?: Date | string | null;
+  currentJob?: boolean;
+  description?: string;
 }
 
-export interface SummarySectionForm {
+export interface Education {
   id?: string;
-  resumeId: string;
-  sectionTitle: string;
-  sectionType: string;
-  content: string;
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  location: string;
+  startDate: Date | string;
+  endDate?: Date | string | null;
+  description?: string;
 }
 
 export interface LicenseOrCertification {
   id?: string;
   title: string;
   organization: string;
-  issueDate?: Date;
-  expirationDate?: Date;
+  issueDate?: Date | string | null;
+  expirationDate?: Date | string | null;
   credentialUrl?: string;
-}
-
-export interface ResumeSection {
-  id?: string;
-  resumeId: string;
-  sectionTitle: string;
-  sectionType: SectionType;
-  summary?: Summary;
-  workExperiences?: WorkExperience[];
-  educations?: Education[];
-  licenseOrCertifications?: LicenseOrCertification[];
-}
-
-export interface WorkExperience {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  Company: Company;
-  jobTitle: JobTitle;
-  location: JobLocation;
-  startDate: Date;
-  endDate: Date;
-  currentJob?: Boolean;
-  description: string;
-}
-
-export interface Education {
-  id?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  institution: string;
-  degree: string;
-  fieldOfStudy: string;
-  startDate: Date;
-  endDate?: Date;
-  description?: string;
-  location: JobLocation;
 }
 
 export interface CoverLetter {
   id?: string;
-  profileId?: string;
+  userId?: string;
   title: string;
   content: string;
   createdAt?: Date;
@@ -119,17 +72,4 @@ export interface CoverLetter {
   _count?: {
     Job?: number;
   };
-}
-
-export type ProfileDocumentType = "resume" | "cover-letter";
-
-export interface ProfileDocument {
-  id: string;
-  title: string;
-  type: ProfileDocumentType;
-  createdAt: Date;
-  updatedAt: Date;
-  jobCount: number;
-  FileId?: string;
-  content?: string;
 }

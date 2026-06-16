@@ -16,7 +16,6 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AiJobMatchSection } from "../profile/AiJobMatchSection";
 import { useState } from "react";
-import { DownloadFileButton } from "../profile/DownloadFileButton";
 
 function JobDetails({ job }: { job: JobResponse }) {
   const [aiSectionOpen, setAiSectionOpen] = useState(false);
@@ -64,13 +63,9 @@ function JobDetails({ job }: { job: JobResponse }) {
               </CardDescription>
             </div>
             <div>
-              {job?.Resume && job?.Resume?.File && job.Resume?.File?.filePath
-                ? DownloadFileButton(
-                    job?.Resume?.File?.filePath,
-                    job?.Resume?.title,
-                    job?.Resume?.File?.fileName,
-                  )
-                : null}
+              {job?.Resume && (
+                <span className="text-sm text-muted-foreground">{job.Resume.title}</span>
+              )}
             </div>
           </CardHeader>
           <h3 className="ml-4">

@@ -24,7 +24,7 @@ import { z } from "zod";
 import { useEffect, useTransition } from "react";
 import { toast } from "../ui/use-toast";
 import { ContactInfo } from "@/models/profile.model";
-import { addContactInfo, updateContactInfo } from "@/actions/profile.actions";
+import { saveContactInfo } from "@/actions/profile.actions";
 
 interface AddContactInfoProps {
   dialogOpen: boolean;
@@ -64,8 +64,7 @@ function AddContactInfo({
     if (contactInfoToEdit) {
       reset(
         {
-          id: contactInfoToEdit.id,
-          resumeId: contactInfoToEdit.resumeId,
+          resumeId,
           firstName: contactInfoToEdit.firstName,
           lastName: contactInfoToEdit.lastName,
           headline: contactInfoToEdit.headline,
@@ -76,15 +75,13 @@ function AddContactInfo({
         { keepDefaultValues: true }
       );
     } else {
-      reset();
+      reset({ resumeId });
     }
-  }, [contactInfoToEdit, reset]);
+  }, [contactInfoToEdit, reset, resumeId]);
 
   const onSubmit = (data: z.infer<typeof AddContactInfoFormSchema>) => {
     startTransition(async () => {
-      const res = contactInfoToEdit
-        ? await updateContactInfo(data)
-        : await addContactInfo(data);
+      const res = await saveContactInfo(data);
       if (!res.success) {
         toast({
           variant: "destructive",

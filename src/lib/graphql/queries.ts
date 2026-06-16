@@ -314,40 +314,40 @@ export const JOB_PROFILES_QUERY = gql`
   }
 `
 
+const RESUME_DRAFT_FIELDS = /* GraphQL */ `
+  id
+  jobProfileId
+  title
+  summary
+  contactInfo
+  skills
+  experiences
+  educations
+  certifications
+  createdAt
+  updatedAt
+`
+
 export const PROFILE_RESUME_DRAFTS_QUERY = gql`
   query ProfileResumeDrafts($profileId: ID!) {
     profileResumeDrafts(profileId: $profileId) {
-      id
-      jobProfileId
-      title
-      cvData
-      createdAt
-      updatedAt
+      ${RESUME_DRAFT_FIELDS}
     }
   }
 `
 
 export const CREATE_PROFILE_RESUME_DRAFT = gql`
-  mutation CreateProfileResumeDraft($profileId: ID!, $title: String!, $cvData: JSON) {
-    createProfileResumeDraft(profileId: $profileId, title: $title, cvData: $cvData) {
-      id
-      jobProfileId
-      title
-      cvData
-      createdAt
-      updatedAt
+  mutation CreateProfileResumeDraft($profileId: ID!, $input: ResumeDraftInput!) {
+    createProfileResumeDraft(profileId: $profileId, input: $input) {
+      ${RESUME_DRAFT_FIELDS}
     }
   }
 `
 
 export const UPDATE_PROFILE_RESUME_DRAFT = gql`
-  mutation UpdateProfileResumeDraft($id: ID!, $title: String, $cvData: JSON) {
-    updateProfileResumeDraft(id: $id, title: $title, cvData: $cvData) {
-      id
-      jobProfileId
-      title
-      cvData
-      updatedAt
+  mutation UpdateProfileResumeDraft($id: ID!, $input: ResumeDraftInput!) {
+    updateProfileResumeDraft(id: $id, input: $input) {
+      ${RESUME_DRAFT_FIELDS}
     }
   }
 `
@@ -361,23 +361,7 @@ export const DELETE_PROFILE_RESUME_DRAFT = gql`
 export const RESUME_DRAFT_QUERY = gql`
   query ResumeDraft($id: ID!) {
     resumeDraft(id: $id) {
-      id
-      jobProfileId
-      title
-      cvData
-      createdAt
-      updatedAt
-    }
-  }
-`
-
-export const UPDATE_RESUME_CV_DATA = gql`
-  mutation UpdateResumeCvData($id: ID!, $cvData: JSON!) {
-    updateResumeCvData(id: $id, cvData: $cvData) {
-      id
-      title
-      cvData
-      updatedAt
+      ${RESUME_DRAFT_FIELDS}
     }
   }
 `

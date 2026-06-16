@@ -3,8 +3,6 @@ import { z } from "zod";
 export const AddCertificationFormSchema = z.object({
   id: z.string().optional(),
   resumeId: z.string().optional(),
-  sectionId: z.string().optional(),
-  sectionTitle: z.string().default("Certifications").optional(),
   title: z
     .string({
       error: "Certification title is required.",

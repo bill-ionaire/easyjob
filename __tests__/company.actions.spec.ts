@@ -572,7 +572,6 @@ describe("Company Actions", () => {
   describe("deleteCompanyById", () => {
     it("should delete a company successfully", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as any).mockResolvedValue(0);
       (prisma.job.count as any).mockResolvedValue(0);
       const mockDeleted = { id: "company-id", label: "Test Company" };
       (prisma.company.delete as any).mockResolvedValue(mockDeleted);
@@ -594,24 +593,8 @@ describe("Company Actions", () => {
       expect(prisma.company.delete).not.toHaveBeenCalled();
     });
 
-    it("should prevent deletion when work experiences exist", async () => {
-      (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as any).mockResolvedValue(1);
-
-      const result = await deleteCompanyById("company-id");
-
-      expect(result).toEqual({
-        success: false,
-        message:
-          "Company cannot be deleted due to its use in experience section of one of the resume! ",
-      });
-      expect(prisma.job.count).not.toHaveBeenCalled();
-      expect(prisma.company.delete).not.toHaveBeenCalled();
-    });
-
     it("should prevent deletion when associated jobs exist", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as any).mockResolvedValue(0);
       (prisma.job.count as any).mockResolvedValue(3);
 
       const result = await deleteCompanyById("company-id");
@@ -626,7 +609,6 @@ describe("Company Actions", () => {
 
     it("should handle unexpected errors", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as any).mockResolvedValue(0);
       (prisma.job.count as any).mockResolvedValue(0);
       (prisma.company.delete as any).mockRejectedValue(
         new Error("Delete failed"),

@@ -31,15 +31,8 @@ export const jobProfileResolvers = {
 
     resumeDraft: async (_: unknown, args: { id: string }, ctx: GraphQLContext) => {
       const userId = requireAuth(ctx.userId)
-      // accessible if it's a profile draft the user owns, or if it's linked to the user's profile
       return ctx.prisma.resume.findFirst({
-        where: {
-          id: args.id,
-          OR: [
-            { jobProfile: { userId } },
-            { profile: { userId } },
-          ],
-        },
+        where: { id: args.id, userId },
       })
     },
   },
@@ -76,7 +69,7 @@ export const jobProfileResolvers = {
 
     createProfileResumeDraft: async (
       _: unknown,
-      args: { profileId: string; title: string; cvData?: any },
+      args: { profileId: string; input: any },
       ctx: GraphQLContext,
     ) => {
       const userId = requireAuth(ctx.userId)
@@ -84,62 +77,48 @@ export const jobProfileResolvers = {
       if (!profile) throw new Error('Profile not found')
       return ctx.prisma.resume.create({
         data: {
+          userId,
           jobProfileId: args.profileId,
-          title: args.title,
-          cvData: args.cvData ?? {},
+          title: args.input.title || 'Untitled',
+          summary: args.input.summary ?? null,
+          contactInfo: args.input.contactInfo ?? undefined,
+          skills: args.input.skills ?? [],
+          experiences: args.input.experiences ?? [],
+          educations: args.input.educations ?? [],
+          certifications: args.input.certifications ?? [],
         },
       })
     },
 
     updateProfileResumeDraft: async (
       _: unknown,
-      args: { id: string; title?: string; cvData?: any },
+      args: { id: string; input: any },
       ctx: GraphQLContext,
     ) => {
       const userId = requireAuth(ctx.userId)
-      const draft = await ctx.prisma.resume.findFirst({
-        where: { id: args.id, jobProfile: { userId } },
-      })
+      const draft = await ctx.prisma.resume.findFirst({ where: { id: args.id, userId } })
       if (!draft) throw new Error('Draft not found')
+      const { title, summary, contactInfo, skills, experiences, educations, certifications } = args.input
       return ctx.prisma.resume.update({
         where: { id: args.id },
         data: {
-          ...(args.title !== undefined && { title: args.title }),
-          ...(args.cvData !== undefined && { cvData: args.cvData }),
+          ...(title !== undefined && { title }),
+          ...(summary !== undefined && { summary }),
+          ...(contactInfo !== undefined && { contactInfo }),
+          ...(skills !== undefined && { skills }),
+          ...(experiences !== undefined && { experiences }),
+          ...(educations !== undefined && { educations }),
+          ...(certifications !== undefined && { certifications }),
         },
       })
     },
 
     deleteProfileResumeDraft: async (_: unknown, args: { id: string }, ctx: GraphQLContext) => {
       const userId = requireAuth(ctx.userId)
-      const draft = await ctx.prisma.resume.findFirst({
-        where: { id: args.id, jobProfile: { userId } },
-      })
+      const draft = await ctx.prisma.resume.findFirst({ where: { id: args.id, userId } })
       if (!draft) throw new Error('Draft not found')
       await ctx.prisma.resume.delete({ where: { id: args.id } })
       return true
-    },
-
-    updateResumeCvData: async (
-      _: unknown,
-      args: { id: string; cvData: any },
-      ctx: GraphQLContext,
-    ) => {
-      const userId = requireAuth(ctx.userId)
-      const resume = await ctx.prisma.resume.findFirst({
-        where: {
-          id: args.id,
-          OR: [
-            { jobProfile: { userId } },
-            { profile: { userId } },
-          ],
-        },
-      })
-      if (!resume) throw new Error('Resume not found')
-      return ctx.prisma.resume.update({
-        where: { id: args.id },
-        data: { cvData: args.cvData },
-      })
     },
   },
 

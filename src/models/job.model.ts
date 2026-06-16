@@ -1,4 +1,4 @@
-import { CoverLetter, Resume } from "./profile.model";
+import { Resume } from "./profile.model";
 
 export interface JobForm {
   id?: string;
@@ -46,8 +46,6 @@ export interface JobResponse {
   applied: boolean;
   resumeId?: string;
   Resume?: Resume;
-  coverLetterId?: string;
-  CoverLetter?: CoverLetter;
   tags?: Tag[];
 }
 

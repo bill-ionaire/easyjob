@@ -13,7 +13,7 @@ import {
   JOB_APPLICATION_QUERY,
   PROFILE_RESUME_DRAFTS_QUERY,
   RESUME_DRAFT_QUERY,
-  UPDATE_RESUME_CV_DATA,
+  UPDATE_PROFILE_RESUME_DRAFT,
 } from '@/lib/graphql/queries'
 
 export default function EditCvPage() {
@@ -41,13 +41,19 @@ export default function EditCvPage() {
   })
   const drafts: any[] = (draftsData as any)?.profileResumeDrafts ?? []
 
+  const resumeToJson = (r: any) => {
+    if (!r) return ''
+    const { title, summary, contactInfo, skills, experiences, educations, certifications } = r
+    return JSON.stringify({ title, summary, contactInfo, skills, experiences, educations, certifications }, null, 2)
+  }
+
   useEffect(() => {
-    if (linkedResume?.cvData) {
-      setCvJson(JSON.stringify(linkedResume.cvData, null, 2))
+    if (linkedResume) {
+      setCvJson(resumeToJson(linkedResume))
     }
   }, [linkedResume])
 
-  const [updateResumeCvData, { loading: saving }] = useMutation(UPDATE_RESUME_CV_DATA, {
+  const [updateDraft, { loading: saving }] = useMutation(UPDATE_PROFILE_RESUME_DRAFT, {
     onCompleted: () => {
       router.push(`/dashboard/applications/${id}`)
     },
@@ -57,7 +63,7 @@ export default function EditCvPage() {
     if (selectedDraftId === 'none') return
     const draft = drafts.find((d: any) => d.id === selectedDraftId)
     if (draft) {
-      setCvJson(JSON.stringify(draft.cvData, null, 2))
+      setCvJson(resumeToJson(draft))
       setCvError(null)
     }
   }
@@ -72,7 +78,7 @@ export default function EditCvPage() {
       setCvError('Invalid JSON — please fix the syntax before saving.')
       return
     }
-    updateResumeCvData({ variables: { id: resumeId, cvData: parsed } })
+    updateDraft({ variables: { id: resumeId, input: parsed } })
   }
 
   if (loading) {
@@ -187,7 +193,7 @@ export default function EditCvPage() {
             rows={28}
             className="font-mono text-xs"
             disabled={resumeLoading}
-            placeholder={'{\n  "contactInfo": {},\n  "summary": "",\n  "workExperiences": [],\n  "skills": []\n}'}
+            placeholder={'{\n  "title": "",\n  "summary": "",\n  "contactInfo": {},\n  "skills": [{ "label": "Programming Languages", "details": ["Python", "SQL"] }],\n  "experiences": [],\n  "educations": [],\n  "certifications": []\n}'}
           />
           {cvError && <p className="text-xs text-destructive">{cvError}</p>}
         </div>

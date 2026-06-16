@@ -6,15 +6,13 @@ import { AddContactInfoFormSchema } from "@/models/addContactInfoForm.schema";
 import { AddCertificationFormSchema } from "@/models/addCertificationForm.schema";
 import { AddExperienceFormSchema } from "@/models/addExperienceForm.schema";
 import { AddSummarySectionFormSchema } from "@/models/addSummaryForm.schema";
-import { CreateResumeFormSchema } from "@/models/createResumeForm.schema";
-import { ResumeSection, SectionType, Summary } from "@/models/profile.model";
+import { AddSkillsFormSchema } from "@/models/addSkillsForm.schema";
 import { getCurrentUser } from "@/utils/user.utils";
 import { APP_CONSTANTS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import path from "path";
-import fs from "fs";
-import { writeFile } from "fs/promises";
+
+// ─── Resume CRUD ──────────────────────────────────────────────────────────────
 
 export const getResumeList = async (
   page: number = 1,
@@ -22,49 +20,29 @@ export const getResumeList = async (
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-    const skip = (page - 1) * limit;
+    if (!user) throw new Error("Not authenticated");
 
+    const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
       prisma.resume.findMany({
-        where: {
-          profile: {
-            userId: user.id,
-          },
-        },
+        where: { userId: user.id },
         skip,
         take: limit,
         select: {
           id: true,
-          profileId: true,
-          FileId: true,
+          userId: true,
           createdAt: true,
           updatedAt: true,
           title: true,
-          _count: {
-            select: {
-              Job: true,
-            },
-          },
+          _count: { select: { Job: true } },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy: { createdAt: "desc" },
       }),
-      prisma.resume.count({
-        where: {
-          profile: {
-            userId: user.id,
-          },
-        },
-      }),
+      prisma.resume.count({ where: { userId: user.id } }),
     ]);
     return { data, total, success: true };
   } catch (error) {
-    const msg = "Failed to get resume list.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to get resume list.");
   }
 };
 
@@ -72,478 +50,243 @@ export const getResumeById = async (
   resumeId: string,
 ): Promise<any | undefined> => {
   try {
-    if (!resumeId) {
-      throw new Error("Please provide resume id");
-    }
+    if (!resumeId) throw new Error("Please provide resume id");
     const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    if (!user) throw new Error("Not authenticated");
 
     const resume = await prisma.resume.findUnique({
-      where: {
-        id: resumeId,
-        profile: { userId: user.id },
-      },
-      include: {
-        ContactInfo: true,
-        File: true,
-        ResumeSections: {
-          include: {
-            summary: true,
-            workExperiences: {
-              include: {
-                jobTitle: true,
-                Company: true,
-                location: true,
-              },
-            },
-            educations: {
-              include: {
-                location: true,
-              },
-            },
-            licenseOrCertifications: true,
-          },
-        },
-      },
+      where: { id: resumeId, userId: user.id },
     });
     return { data: resume, success: true };
   } catch (error) {
-    const msg = "Failed to get resume.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to get resume.");
   }
 };
 
-export const addContactInfo = async (
-  data: z.infer<typeof AddContactInfoFormSchema>,
-): Promise<any | undefined> => {
+export const createResume = async (title: string): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-
-    const res = await prisma.resume.update({
-      where: {
-        id: data.resumeId,
-        profile: { userId: user.id },
-      },
-      data: {
-        ContactInfo: {
-          connectOrCreate: {
-            where: { resumeId: data.resumeId },
-            create: {
-              firstName: data.firstName,
-              lastName: data.lastName,
-              headline: data.headline,
-              email: data.email!,
-              phone: data.phone!,
-              address: data.address,
-            },
-          },
-        },
-      },
+    const res = await prisma.resume.create({
+      data: { userId: user.id, title },
     });
-    revalidatePath("/dashboard/profile/resume");
-    return { data: res, success: true };
-  } catch (error) {
-    const msg = "Failed to create contact info.";
-    return handleError(error, msg);
-  }
-};
-
-export const updateContactInfo = async (
-  data: z.infer<typeof AddContactInfoFormSchema>,
-): Promise<any | undefined> => {
-  try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-
-    const res = await prisma.contactInfo.update({
-      where: {
-        id: data.id,
-        resume: { profile: { userId: user.id } },
-      },
-      data: {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        headline: data.headline,
-        email: data.email!,
-        phone: data.phone!,
-        address: data.address,
-      },
-    });
-    revalidatePath("/dashboard/profile/resume");
-    return { data: res, success: true };
-  } catch (error) {
-    const msg = "Failed to update contact info.";
-    return handleError(error, msg);
-  }
-};
-
-export const createResumeProfile = async (
-  title: string,
-  fileName: string,
-  filePath?: string,
-): Promise<any | undefined> => {
-  try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-
-    //check if title exists
-    const value = title.trim().toLowerCase();
-
-    const titleExists = await prisma.resume.findFirst({
-      where: {
-        title: value,
-      },
-    });
-
-    if (titleExists) {
-      throw new Error("Title already exists!");
-    }
-
-    const profile = await prisma.profile.findFirst({
-      where: {
-        userId: user.id,
-      },
-    });
-
-    const res =
-      profile && profile.id
-        ? await prisma.resume.create({
-            data: {
-              profileId: profile!.id,
-              title,
-              FileId: fileName
-                ? await createFileEntry(fileName, filePath)
-                : null,
-            },
-          })
-        : await prisma.profile.create({
-            data: {
-              userId: user.id,
-              resumes: {
-                create: [
-                  {
-                    title,
-                    FileId: fileName
-                      ? await createFileEntry(fileName, filePath)
-                      : null,
-                  },
-                ],
-              },
-            },
-          });
-    // revalidatePath("/dashboard/myjobs", "page");
     return { success: true, data: res };
   } catch (error) {
-    const msg = "Failed to create resume.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to create resume.");
   }
-};
-
-const createFileEntry = async (
-  fileName: string | undefined,
-  filePath: string | undefined,
-) => {
-  const newFileEntry = await prisma.file.create({
-    data: {
-      fileName: fileName!,
-      filePath: filePath!,
-      fileType: "resume",
-    },
-  });
-  return newFileEntry.id;
 };
 
 export const editResume = async (
   id: string,
   title: string,
-  fileId?: string,
-  fileName?: string,
-  filePath?: string,
 ): Promise<any | undefined> => {
   try {
-    let resolvedFileId = fileId;
-
-    if (!fileId && fileName && filePath) {
-      resolvedFileId = await createFileEntry(fileName, filePath);
-    }
-
-    if (resolvedFileId) {
-      const isValidFileId = await prisma.file.findFirst({
-        where: { id: resolvedFileId },
-      });
-
-      if (!isValidFileId) {
-        throw new Error(
-          `The provided FileId "${resolvedFileId}" does not exist.`,
-        );
-      }
-    }
-
     const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    if (!user) throw new Error("Not authenticated");
 
     const res = await prisma.resume.update({
-      where: { id, profile: { userId: user.id } },
-      data: {
-        title,
-        FileId: resolvedFileId || null,
-      },
+      where: { id, userId: user.id },
+      data: { title },
     });
     return { success: true, data: res };
   } catch (error) {
-    const msg = "Failed to update resume or file.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to update resume.");
   }
 };
 
 export const deleteResumeById = async (
   resumeId: string,
-  fileId?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-    if (fileId) {
-      await deleteFile(fileId);
-    }
-
-    await prisma.$transaction(async (prisma) => {
-      await prisma.contactInfo.deleteMany({
-        where: {
-          resumeId: resumeId,
-        },
-      });
-
-      await prisma.summary.deleteMany({
-        where: {
-          ResumeSection: {
-            resumeId: resumeId,
-          },
-        },
-      });
-
-      await prisma.workExperience.deleteMany({
-        where: {
-          ResumeSection: {
-            resumeId: resumeId,
-          },
-        },
-      });
-
-      await prisma.education.deleteMany({
-        where: {
-          ResumeSection: {
-            resumeId: resumeId,
-          },
-        },
-      });
-
-      await prisma.licenseOrCertification.deleteMany({
-        where: {
-          ResumeSection: {
-            resumeId: resumeId,
-          },
-        },
-      });
-
-      await prisma.resumeSection.deleteMany({
-        where: {
-          resumeId: resumeId,
-        },
-      });
-
-      await prisma.resume.delete({
-        where: { id: resumeId },
-      });
-    });
+    await prisma.resume.delete({ where: { id: resumeId, userId: user.id } });
     return { success: true };
   } catch (error) {
-    const msg = "Failed to delete resume.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to delete resume.");
   }
 };
 
-export const uploadFile = async (file: File, dir: string, path: string) => {
-  const bytes = await file.arrayBuffer();
-  const buffer = new Uint8Array(bytes);
+// ─── Contact Info ─────────────────────────────────────────────────────────────
 
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  await writeFile(path, buffer);
-};
-
-export const deleteFile = async (fileId: string) => {
+export const saveContactInfo = async (
+  data: z.infer<typeof AddContactInfoFormSchema>,
+): Promise<any | undefined> => {
   try {
-    const file = await prisma.file.findFirst({
-      where: {
-        id: fileId,
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const res = await prisma.resume.update({
+      where: { id: data.resumeId, userId: user.id },
+      data: {
+        contactInfo: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          headline: data.headline,
+          email: data.email,
+          phone: data.phone,
+          address: data.address ?? null,
+        },
       },
     });
-
-    const filePath = file?.filePath as string;
-
-    const fullFilePath = path.join(filePath);
-    if (!fs.existsSync(filePath)) {
-      throw new Error("File not found");
-    }
-    fs.unlinkSync(filePath);
-
-    await prisma.file.delete({
-      where: {
-        id: fileId,
-      },
-    });
-
-    console.log("file deleted successfully!");
+    revalidatePath("/dashboard/profile/resume");
+    return { data: res, success: true };
   } catch (error) {
-    const msg = "Failed to delete file.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to save contact info.");
   }
 };
+
+// Keep old names as aliases so existing callers still compile
+export const addContactInfo = saveContactInfo;
+export const updateContactInfo = saveContactInfo;
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
 
 export const addResumeSummary = async (
   data: z.infer<typeof AddSummarySectionFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-    const res = await prisma.resumeSection.create({
-      data: {
-        resumeId: data.resumeId!,
-        sectionTitle: data.sectionTitle!,
-        sectionType: SectionType.SUMMARY,
-      },
-    });
-
-    const summary = await prisma.resumeSection.update({
-      where: {
-        id: res.id,
-      },
-      data: {
-        summary: {
-          create: {
-            content: data.content!,
-          },
-        },
-      },
+    const res = await prisma.resume.update({
+      where: { id: data.resumeId, userId: user.id },
+      data: { summary: data.content },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: summary, success: true };
+    return { data: res, success: true };
   } catch (error) {
-    const msg = "Failed to create summary.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to create summary.");
   }
 };
 
-export const updateResumeSummary = async (
-  data: z.infer<typeof AddSummarySectionFormSchema>,
+export const updateResumeSummary = addResumeSummary;
+
+// ─── Skills ───────────────────────────────────────────────────────────────────
+
+export const addResumeSkills = async (
+  data: z.infer<typeof AddSkillsFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-    const res = await prisma.resumeSection.update({
-      where: {
-        id: data.id,
-        Resume: { profile: { userId: user.id } },
-      },
-      data: {
-        sectionTitle: data.sectionTitle!,
-      },
+    const resume = await prisma.resume.findUnique({
+      where: { id: data.resumeId, userId: user.id },
+      select: { skills: true },
     });
+    if (!resume) throw new Error("Resume not found");
 
-    const summary = await prisma.resumeSection.update({
-      where: {
-        id: data.id,
-        Resume: { profile: { userId: user.id } },
-      },
-      data: {
-        summary: {
-          update: {
-            content: data.content!,
-          },
-        },
-      },
+    const skills = (resume.skills as any[]) ?? [];
+    const newSkill = { id: crypto.randomUUID(), label: data.label, details: data.details };
+    const updated = [...skills, newSkill];
+
+    await prisma.resume.update({
+      where: { id: data.resumeId },
+      data: { skills: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: summary, success: true };
+    return { data: newSkill, success: true };
   } catch (error) {
-    const msg = "Failed to update summary.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to create skills.");
   }
 };
+
+export const updateResumeSkills = async (
+  data: z.infer<typeof AddSkillsFormSchema>,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const resume = await prisma.resume.findUnique({
+      where: { id: data.resumeId, userId: user.id },
+      select: { skills: true },
+    });
+    if (!resume) throw new Error("Resume not found");
+
+    const skills = (resume.skills as any[]) ?? [];
+    const updated = skills.map((s: any) =>
+      s.id === data.id ? { ...s, label: data.label, details: data.details } : s,
+    );
+
+    await prisma.resume.update({
+      where: { id: data.resumeId },
+      data: { skills: updated },
+    });
+    revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
+    return { data: updated.find((s: any) => s.id === data.id), success: true };
+  } catch (error) {
+    return handleError(error, "Failed to update skills.");
+  }
+};
+
+export const deleteSkillCategory = async (
+  id: string,
+  resumeId: string,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const resume = await prisma.resume.findUnique({
+      where: { id: resumeId, userId: user.id },
+      select: { skills: true },
+    });
+    if (!resume) throw new Error("Resume not found");
+
+    const skills = (resume.skills as any[]) ?? [];
+    const updated = skills.filter((s: any) => s.id !== id);
+
+    await prisma.resume.update({
+      where: { id: resumeId },
+      data: { skills: updated },
+    });
+    revalidatePath(`/dashboard/profile/resume/${resumeId}`);
+    return { success: true };
+  } catch (error) {
+    return handleError(error, "Failed to delete skill.");
+  }
+};
+
+// ─── Experience ───────────────────────────────────────────────────────────────
 
 export const addExperience = async (
   data: z.infer<typeof AddExperienceFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const resume = await prisma.resume.findUnique({
+      where: { id: data.resumeId, userId: user.id },
+      select: { experiences: true },
+    });
+    if (!resume) throw new Error("Resume not found");
 
-    if (!data.sectionId && !data.sectionTitle) {
-      throw new Error("SectionTitle is required.");
-    }
+    const experiences = (resume.experiences as any[]) ?? [];
+    const newExp = {
+      id: crypto.randomUUID(),
+      company: data.company,
+      jobTitle: data.title,
+      location: data.location,
+      startDate: data.startDate,
+      endDate: data.endDate ?? null,
+      currentJob: data.currentJob ?? false,
+      description: data.jobDescription,
+    };
+    const updated = [...experiences, newExp];
 
-    const section = !data.sectionId
-      ? await prisma.resumeSection.create({
-          data: {
-            resumeId: data.resumeId!,
-            sectionTitle: data.sectionTitle!,
-            sectionType: SectionType.EXPERIENCE,
-          },
-        })
-      : undefined;
-
-    const experience = await prisma.resumeSection.update({
-      where: {
-        id: section ? section.id : data.sectionId,
-      },
-      data: {
-        workExperiences: {
-          create: {
-            jobTitleId: data.title,
-            companyId: data.company,
-            locationId: data.location,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            description: data.jobDescription,
-          },
-        },
-      },
+    await prisma.resume.update({
+      where: { id: data.resumeId },
+      data: { experiences: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: experience, success: true };
+    return { data: newExp, success: true };
   } catch (error) {
-    const msg = "Failed to create experience.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to create experience.");
   }
 };
 
@@ -552,83 +295,100 @@ export const updateExperience = async (
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-    // const res = await prisma.resumeSection.update({
-    //   where: {
-    //     id: data.id,
-    //   },
-    //   data: {
-    //     sectionTitle: data.sectionTitle!,
-    //   },
-    // });
+    const resume = await prisma.resume.findUnique({
+      where: { id: data.resumeId, userId: user.id },
+      select: { experiences: true },
+    });
+    if (!resume) throw new Error("Resume not found");
 
-    const summary = await prisma.workExperience.update({
-      where: {
-        id: data.id,
-        ResumeSection: { Resume: { profile: { userId: user.id } } },
-      },
-      data: {
-        jobTitleId: data.title,
-        companyId: data.company,
-        locationId: data.location,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        description: data.jobDescription,
-      },
+    const experiences = (resume.experiences as any[]) ?? [];
+    const updated = experiences.map((e: any) =>
+      e.id === data.id
+        ? {
+            ...e,
+            company: data.company,
+            jobTitle: data.title,
+            location: data.location,
+            startDate: data.startDate,
+            endDate: data.endDate ?? null,
+            currentJob: data.currentJob ?? false,
+            description: data.jobDescription,
+          }
+        : e,
+    );
+
+    await prisma.resume.update({
+      where: { id: data.resumeId },
+      data: { experiences: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: summary, success: true };
+    return { data: updated.find((e: any) => e.id === data.id), success: true };
   } catch (error) {
-    const msg = "Failed to update experience.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to update experience.");
   }
 };
+
+export const deleteExperience = async (
+  id: string,
+  resumeId: string,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const resume = await prisma.resume.findUnique({
+      where: { id: resumeId, userId: user.id },
+      select: { experiences: true },
+    });
+    if (!resume) throw new Error("Resume not found");
+
+    const updated = ((resume.experiences as any[]) ?? []).filter((e: any) => e.id !== id);
+    await prisma.resume.update({ where: { id: resumeId }, data: { experiences: updated } });
+    revalidatePath(`/dashboard/profile/resume/${resumeId}`);
+    return { success: true };
+  } catch (error) {
+    return handleError(error, "Failed to delete experience.");
+  }
+};
+
+// ─── Education ────────────────────────────────────────────────────────────────
 
 export const addEducation = async (
   data: z.infer<typeof AddEducationFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-    const section = !data.sectionId
-      ? await prisma.resumeSection.create({
-          data: {
-            resumeId: data.resumeId!,
-            sectionTitle: data.sectionTitle!,
-            sectionType: SectionType.EDUCATION,
-          },
-        })
-      : undefined;
+    const resume = await prisma.resume.findUnique({
+      where: { id: data.resumeId, userId: user.id },
+      select: { educations: true },
+    });
+    if (!resume) throw new Error("Resume not found");
 
-    const education = await prisma.resumeSection.update({
-      where: {
-        id: section ? section.id : data.sectionId,
-      },
-      data: {
-        educations: {
-          create: {
-            institution: data.institution,
-            degree: data.degree,
-            fieldOfStudy: data.fieldOfStudy,
-            locationId: data.location,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            description: data.description,
-          },
-        },
-      },
+    const educations = (resume.educations as any[]) ?? [];
+    const newEdu = {
+      id: crypto.randomUUID(),
+      institution: data.institution,
+      degree: data.degree,
+      fieldOfStudy: data.fieldOfStudy,
+      location: data.location,
+      startDate: data.startDate,
+      endDate: data.endDate ?? null,
+      description: data.description ?? null,
+    };
+    const updated = [...educations, newEdu];
+
+    await prisma.resume.update({
+      where: { id: data.resumeId },
+      data: { educations: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: education, success: true };
+    return { data: newEdu, success: true };
   } catch (error) {
-    const msg = "Failed to create education.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to create education.");
   }
 };
 
@@ -637,83 +397,98 @@ export const updateEducation = async (
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-    // const res = await prisma.resumeSection.update({
-    //   where: {
-    //     id: data.id,
-    //   },
-    //   data: {
-    //     sectionTitle: data.sectionTitle!,
-    //   },
-    // });
+    const resume = await prisma.resume.findUnique({
+      where: { id: data.resumeId, userId: user.id },
+      select: { educations: true },
+    });
+    if (!resume) throw new Error("Resume not found");
 
-    const summary = await prisma.education.update({
-      where: {
-        id: data.id,
-        ResumeSection: { Resume: { profile: { userId: user.id } } },
-      },
-      data: {
-        institution: data.institution,
-        degree: data.degree,
-        fieldOfStudy: data.fieldOfStudy,
-        locationId: data.location,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        description: data.description,
-      },
+    const educations = (resume.educations as any[]) ?? [];
+    const updated = educations.map((e: any) =>
+      e.id === data.id
+        ? {
+            ...e,
+            institution: data.institution,
+            degree: data.degree,
+            fieldOfStudy: data.fieldOfStudy,
+            location: data.location,
+            startDate: data.startDate,
+            endDate: data.endDate ?? null,
+            description: data.description ?? null,
+          }
+        : e,
+    );
+
+    await prisma.resume.update({
+      where: { id: data.resumeId },
+      data: { educations: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: summary, success: true };
+    return { data: updated.find((e: any) => e.id === data.id), success: true };
   } catch (error) {
-    const msg = "Failed to update education.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to update education.");
   }
 };
+
+export const deleteEducation = async (
+  id: string,
+  resumeId: string,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const resume = await prisma.resume.findUnique({
+      where: { id: resumeId, userId: user.id },
+      select: { educations: true },
+    });
+    if (!resume) throw new Error("Resume not found");
+
+    const updated = ((resume.educations as any[]) ?? []).filter((e: any) => e.id !== id);
+    await prisma.resume.update({ where: { id: resumeId }, data: { educations: updated } });
+    revalidatePath(`/dashboard/profile/resume/${resumeId}`);
+    return { success: true };
+  } catch (error) {
+    return handleError(error, "Failed to delete education.");
+  }
+};
+
+// ─── Certification ────────────────────────────────────────────────────────────
 
 export const addCertification = async (
   data: z.infer<typeof AddCertificationFormSchema>,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const resume = await prisma.resume.findUnique({
+      where: { id: data.resumeId, userId: user.id },
+      select: { certifications: true },
+    });
+    if (!resume) throw new Error("Resume not found");
 
-    const section = !data.sectionId
-      ? await prisma.resumeSection.create({
-          data: {
-            resumeId: data.resumeId!,
-            sectionTitle: data.sectionTitle!,
-            sectionType: SectionType.CERTIFICATION,
-          },
-        })
-      : undefined;
+    const certifications = (resume.certifications as any[]) ?? [];
+    const newCert = {
+      id: crypto.randomUUID(),
+      title: data.title,
+      organization: data.organization,
+      issueDate: data.issueDate ?? null,
+      expirationDate: data.expirationDate ?? null,
+      credentialUrl: data.credentialUrl ?? null,
+    };
+    const updated = [...certifications, newCert];
 
-    const result = await prisma.resumeSection.update({
-      where: {
-        id: section ? section.id : data.sectionId,
-      },
-      data: {
-        licenseOrCertifications: {
-          create: {
-            title: data.title,
-            organization: data.organization,
-            issueDate: data.issueDate,
-            expirationDate: data.expirationDate,
-            credentialUrl: data.credentialUrl,
-          },
-        },
-      },
+    await prisma.resume.update({
+      where: { id: data.resumeId },
+      data: { certifications: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: result, success: true };
+    return { data: newCert, success: true };
   } catch (error) {
-    const msg = "Failed to create certification.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to create certification.");
   }
 };
 
@@ -722,28 +497,58 @@ export const updateCertification = async (
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
 
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
+    const resume = await prisma.resume.findUnique({
+      where: { id: data.resumeId, userId: user.id },
+      select: { certifications: true },
+    });
+    if (!resume) throw new Error("Resume not found");
 
-    const result = await prisma.licenseOrCertification.update({
-      where: {
-        id: data.id,
-        ResumeSection: { Resume: { profile: { userId: user.id } } },
-      },
-      data: {
-        title: data.title,
-        organization: data.organization,
-        issueDate: data.issueDate,
-        expirationDate: data.expirationDate,
-        credentialUrl: data.credentialUrl,
-      },
+    const certifications = (resume.certifications as any[]) ?? [];
+    const updated = certifications.map((c: any) =>
+      c.id === data.id
+        ? {
+            ...c,
+            title: data.title,
+            organization: data.organization,
+            issueDate: data.issueDate ?? null,
+            expirationDate: data.expirationDate ?? null,
+            credentialUrl: data.credentialUrl ?? null,
+          }
+        : c,
+    );
+
+    await prisma.resume.update({
+      where: { id: data.resumeId },
+      data: { certifications: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: result, success: true };
+    return { data: updated.find((c: any) => c.id === data.id), success: true };
   } catch (error) {
-    const msg = "Failed to update certification.";
-    return handleError(error, msg);
+    return handleError(error, "Failed to update certification.");
+  }
+};
+
+export const deleteCertification = async (
+  id: string,
+  resumeId: string,
+): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const resume = await prisma.resume.findUnique({
+      where: { id: resumeId, userId: user.id },
+      select: { certifications: true },
+    });
+    if (!resume) throw new Error("Resume not found");
+
+    const updated = ((resume.certifications as any[]) ?? []).filter((c: any) => c.id !== id);
+    await prisma.resume.update({ where: { id: resumeId }, data: { certifications: updated } });
+    revalidatePath(`/dashboard/profile/resume/${resumeId}`);
+    return { success: true };
+  } catch (error) {
+    return handleError(error, "Failed to delete certification.");
   }
 };

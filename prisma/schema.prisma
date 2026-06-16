@@ -25,7 +25,6 @@ model User {
   Company      Company[]
   JobSource    JobSource[]
   Contact      Contact[]
-  Profile      Profile[]
   Activity     Activity[]
   ActivityType ActivityType[]
   Settings     UserSettings?
@@ -34,6 +33,7 @@ model User {
   jobPosts     JobPost[]
   jobProfiles  JobProfile[]
   jobApplications JobApplication[]
+  resumes      Resume[]
 }
 
 model UserSettings {
@@ -45,140 +45,25 @@ model UserSettings {
   updatedAt DateTime @updatedAt
 }
 
-model Profile {
-  id           String        @id @default(uuid())
-  userId       String
-  user         User          @relation(fields: [userId], references: [id])
-  resumes      Resume[]
-  coverLetters CoverLetter[]
-}
-
 model Resume {
   id             String          @id @default(uuid())
-  profileId      String?
-  title          String
-  cvData         Json            @default("{}")
+  userId         String
+  user           User            @relation(fields: [userId], references: [id])
   jobProfileId   String?
+  jobProfile     JobProfile?     @relation(fields: [jobProfileId], references: [id], onDelete: SetNull)
+  title          String
+  summary        String?
+  contactInfo    Json?
+  experiences    Json            @default("[]")
+  skills         Json            @default("[]")
+  educations     Json            @default("[]")
+  certifications Json            @default("[]")
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  ContactInfo    ContactInfo?
-  ResumeSections ResumeSection[]
-  profile        Profile?        @relation(fields: [profileId], references: [id])
-  jobProfile     JobProfile?     @relation(fields: [jobProfileId], references: [id], onDelete: SetNull)
-  File           File?           @relation(fields: [FileId], references: [id])
-  FileId         String?         @unique
   Job            Job[]
   jobApplications JobApplication[]
-}
 
-model CoverLetter {
-  id        String   @id @default(uuid())
-  profileId String
-  title     String
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  profile   Profile  @relation(fields: [profileId], references: [id])
-  Job       Job[]
-}
-
-model File {
-  id         String   @id @default(uuid())
-  fileName   String
-  filePath   String
-  fileType   String
-  uploadedAt DateTime @default(now())
-  Resume     Resume?
-}
-
-model ResumeSection {
-  id                      String                   @id @default(uuid())
-  resumeId                String
-  sectionTitle            String
-  sectionType             String
-  summaryId               String?                  @unique
-  summary                 Summary?                 @relation(fields: [summaryId], references: [id])
-  workExperiences         WorkExperience[]
-  educations              Education[]
-  licenseOrCertifications LicenseOrCertification[]
-  others                  OtherSection[]
-  Resume                  Resume                   @relation(fields: [resumeId], references: [id])
-}
-
-model ContactInfo {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  resumeId  String   @unique
-  firstName String
-  lastName  String
-  headline  String
-  email     String
-  phone     String
-  address   String?
-  resume    Resume   @relation(fields: [resumeId], references: [id])
-}
-
-model Summary {
-  id            String         @id @default(uuid())
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  content       String
-  ResumeSection ResumeSection? @relation
-}
-
-model WorkExperience {
-  id              String         @id @default(uuid())
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  companyId       String
-  Company         Company        @relation(fields: [companyId], references: [id])
-  jobTitleId      String
-  jobTitle        JobTitle       @relation(fields: [jobTitleId], references: [id])
-  startDate       DateTime
-  endDate         DateTime?
-  description     String
-  locationId      String
-  location        Location       @relation(fields: [locationId], references: [id])
-  resumeSectionId String?
-  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
-}
-
-model Education {
-  id              String         @id @default(uuid())
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  institution     String
-  degree          String
-  fieldOfStudy    String
-  startDate       DateTime
-  endDate         DateTime?
-  description     String?
-  locationId      String
-  location        Location       @relation(fields: [locationId], references: [id])
-  resumeSectionId String?
-  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
-}
-
-model LicenseOrCertification {
-  id              String         @id @default(uuid())
-  title           String
-  organization    String
-  issueDate       DateTime?
-  expirationDate  DateTime?
-  credentialUrl   String?
-  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
-  resumeSectionId String?
-}
-
-model OtherSection {
-  id              String         @id @default(uuid())
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  title           String
-  content         String
-  ResumeSection   ResumeSection? @relation(fields: [resumeSectionId], references: [id])
-  resumeSectionId String?
+  @@index([userId])
 }
 
 model Contact {
@@ -193,13 +78,12 @@ model Contact {
 }
 
 model JobTitle {
-  id              String           @id @default(uuid())
-  label           String
-  value           String
-  jobs            Job[]
-  createdBy       String // userId
-  user            User             @relation(fields: [createdBy], references: [id])
-  workExperiences WorkExperience[]
+  id        String  @id @default(uuid())
+  label     String
+  value     String
+  jobs      Job[]
+  createdBy String // userId
+  user      User   @relation(fields: [createdBy], references: [id])
 
   @@unique([value, createdBy])
 }
@@ -212,29 +96,26 @@ model JobStatus {
 }
 
 model Location {
-  id             String           @id @default(uuid())
-  label          String
-  value          String
-  stateProv      String?
-  country        String?
-  jobsApplied    Job[]
-  createdBy      String // userId
-  user           User             @relation(fields: [createdBy], references: [id])
-  educations     Education[]
-  workExperience WorkExperience[]
+  id          String  @id @default(uuid())
+  label       String
+  value       String
+  stateProv   String?
+  country     String?
+  jobsApplied Job[]
+  createdBy   String // userId
+  user        User   @relation(fields: [createdBy], references: [id])
 
   @@unique([value, createdBy])
 }
 
 model Company {
-  id              String           @id @default(uuid())
-  label           String
-  value           String
-  jobsApplied     Job[]
-  logoUrl         String? // field is optional
-  createdBy       String // userId
-  user            User             @relation(fields: [createdBy], references: [id])
-  workExperiences WorkExperience[]
+  id          String  @id @default(uuid())
+  label       String
+  value       String
+  jobsApplied Job[]
+  logoUrl     String? // field is optional
+  createdBy   String // userId
+  user        User   @relation(fields: [createdBy], references: [id])
 
   @@unique([value, createdBy])
 }
@@ -281,10 +162,8 @@ model Job {
   Location    Location?   @relation(fields: [locationId], references: [id])
   locationId  String?
   Interview   Interview[]
-  Resume        Resume?      @relation(fields: [resumeId], references: [id])
-  resumeId      String?
-  CoverLetter   CoverLetter? @relation(fields: [coverLetterId], references: [id])
-  coverLetterId String?
+  Resume      Resume?     @relation(fields: [resumeId], references: [id])
+  resumeId    String?
   tags        Tag[]
 }
 

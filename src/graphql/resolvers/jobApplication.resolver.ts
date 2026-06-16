@@ -207,6 +207,25 @@ export const jobApplicationResolvers = {
           }
         }
 
+        if (data.resumeId) {
+          const source = await tx.resume.findUnique({ where: { id: data.resumeId } })
+          if (source) {
+            const clone = await tx.resume.create({
+              data: {
+                userId: source.userId,
+                title: source.title,
+                summary: source.summary ?? undefined,
+                contactInfo: source.contactInfo ?? undefined,
+                experiences: source.experiences,
+                skills: source.skills,
+                educations: source.educations,
+                certifications: source.certifications,
+              },
+            })
+            data.resumeId = clone.id
+          }
+        }
+
         return tx.jobApplication.update({
           where: { id: args.id, userId },
           data,
@@ -267,18 +286,17 @@ export const jobApplicationResolvers = {
       })
       if (!application) throw new Error('Application not found')
 
-      let profile = await ctx.prisma.profile.findFirst({
-        where: { userId: application.userId },
-      })
-      if (!profile) {
-        profile = await ctx.prisma.profile.create({ data: { userId: application.userId } })
-      }
-
+      const cv = args.cvData
+      const { randomUUID } = await import('crypto')
       const resume = await ctx.prisma.resume.create({
         data: {
-          profileId: profile.id,
-          title: args.cvData.title ?? 'Generated Resume',
-          cvData: args.cvData,
+          userId: application.userId,
+          title: cv.title ?? 'Generated Resume',
+          summary: cv.Summary ?? null,
+          skills: (cv.Skills ?? []).map((s: any) => ({ id: randomUUID(), label: s.label ?? s.category ?? '', details: Array.isArray(s.details) ? s.details : (s.items ?? []) })),
+          experiences: (cv.Experiences ?? []).map((e: any) => ({ id: randomUUID(), company: e.company ?? '', jobTitle: e.title ?? e.jobTitle ?? '', location: e.location ?? '', startDate: e.start_date ?? e.startDate ?? null, endDate: e.end_date ?? e.endDate ?? null, description: Array.isArray(e.highlights) ? e.highlights.join('\n') : (e.description ?? '') })),
+          educations: (cv.Education ?? []).map((e: any) => ({ id: randomUUID(), institution: e.institution ?? '', degree: e.degree ?? '', fieldOfStudy: e.fieldOfStudy ?? '', location: e.location ?? '', startDate: e.start_year ?? e.startDate ?? null, endDate: e.end_year ?? e.endDate ?? null })),
+          certifications: [],
         },
       })
 

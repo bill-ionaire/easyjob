@@ -44,10 +44,9 @@ import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { Combobox } from "../ComboBox";
-import { CoverLetter, Resume } from "@/models/profile.model";
+import { Resume } from "@/models/profile.model";
 import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
-import { getCoverLetterList } from "@/actions/coverLetter.actions";
 import { TagInput } from "./TagInput";
 
 type AddJobProps = {
@@ -78,7 +77,6 @@ export function AddJob({
   const [dialogOpen, setDialogOpen] = useState(initialOpen ?? false);
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [resumes, setResumes] = useState<Resume[]>([]);
-  const [coverLetters, setCoverLetters] = useState<CoverLetter[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>(tags);
   const [isPending, startTransition] = useTransition();
 
@@ -113,15 +111,6 @@ export function AddJob({
     }
   }, [setResumes]);
 
-  const loadCoverLetters = useCallback(async () => {
-    try {
-      const result = await getCoverLetterList(1, 100);
-      setCoverLetters(result.data);
-    } catch (error) {
-      console.error("Failed to load cover letters:", error);
-    }
-  }, [setCoverLetters]);
-
   useEffect(() => {
     if (editJob) {
       reset(
@@ -141,7 +130,6 @@ export function AddJob({
           jobUrl: editJob.jobUrl ?? undefined,
           dateApplied: editJob.appliedDate ?? undefined,
           resume: editJob.Resume?.id ?? undefined,
-          coverLetter: editJob.CoverLetter?.id ?? undefined,
           tags: editJob.tags?.map((t) => t.id) ?? [],
         },
         { keepDefaultValues: true },
@@ -161,8 +149,7 @@ export function AddJob({
   useEffect(() => {
     if (!dialogOpen) return;
     loadResumes();
-    loadCoverLetters();
-  }, [dialogOpen, loadResumes, loadCoverLetters]);
+  }, [dialogOpen, loadResumes]);
 
   const setNewResumeId = (id: string) => {
     setTimeout(() => {
@@ -512,25 +499,6 @@ export function AddJob({
                     setResumeDialogOpen={setResumeDialogOpen}
                     reloadResumes={loadResumes}
                     setNewResumeId={setNewResumeId}
-                  />
-                </div>
-
-                {/* Cover Letter */}
-                <div className="flex items-end">
-                  <FormField
-                    control={form.control}
-                    name="coverLetter"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col [&>button]:capitalize">
-                        <FormLabel>Cover Letter</FormLabel>
-                        <SelectFormCtrl
-                          label="Cover Letter"
-                          options={coverLetters}
-                          field={field}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
                   />
                 </div>
 

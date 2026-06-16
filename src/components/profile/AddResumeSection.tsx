@@ -13,13 +13,13 @@ import { forwardRef, useImperativeHandle, useState } from "react";
 import {
   ContactInfo,
   Resume,
-  ResumeSection,
-  SectionType,
+  SkillCategory,
 } from "@/models/profile.model";
 import AddResumeSummary from "./AddResumeSummary";
 import AddExperience from "./AddExperience";
 import AddEducation from "./AddEducation";
 import AddCertification from "./AddCertification";
+import AddSkills from "./AddSkills";
 
 interface AddResumeSectionProps {
   resume: Resume;
@@ -27,10 +27,11 @@ interface AddResumeSectionProps {
 
 export interface AddResumeSectionRef {
   openContactInfoDialog: (c: ContactInfo) => void;
-  openSummaryDialog: (s: ResumeSection) => void;
-  openExperienceDialog: (s: ResumeSection) => void;
-  openEducationDialog: (s: ResumeSection) => void;
-  openCertificationDialog: (s: ResumeSection) => void;
+  openSummaryDialog: (summaryContent?: string) => void;
+  openSkillsCategoryDialog: (sc?: SkillCategory) => void;
+  openExperienceDialog: (experienceId?: string) => void;
+  openEducationDialog: (educationId?: string) => void;
+  openCertificationDialog: (certificationId?: string) => void;
 }
 
 const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
@@ -39,82 +40,68 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
     const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
     const [experienceDialogOpen, setExperienceDialogOpen] = useState(false);
     const [educationDialogOpen, setEducationDialogOpen] = useState(false);
-    const [certificationDialogOpen, setCertificationDialogOpen] =
-      useState(false);
-    const [contactInfoToEdit, setContactInfoToEdit] =
-      useState<ContactInfo | null>(null);
-    const [summaryToEdit, setSummaryToEdit] = useState<ResumeSection | null>(
-      null,
-    );
-    const [experienceToEdit, setExperienceToEdit] =
-      useState<ResumeSection | null>(null);
-    const [educationToEdit, setEducationToEdit] =
-      useState<ResumeSection | null>(null);
-    const [certificationToEdit, setCertificationToEdit] =
-      useState<ResumeSection | null>(null);
+    const [skillsDialogOpen, setSkillsDialogOpen] = useState(false);
+    const [certificationDialogOpen, setCertificationDialogOpen] = useState(false);
+
+    const [contactInfoToEdit, setContactInfoToEdit] = useState<ContactInfo | null>(null);
+    const [summaryToEdit, setSummaryToEdit] = useState<string | null>(null);
+    const [skillToEdit, setSkillToEdit] = useState<SkillCategory | null>(null);
+    const [experienceIdToEdit, setExperienceIdToEdit] = useState<string | undefined>(undefined);
+    const [educationIdToEdit, setEducationIdToEdit] = useState<string | undefined>(undefined);
+    const [certificationIdToEdit, setCertificationIdToEdit] = useState<string | undefined>(undefined);
+
     useImperativeHandle(ref, () => ({
       openContactInfoDialog(contactInfo: ContactInfo) {
-        setContactInfoDialogOpen(true);
         setContactInfoToEdit({ ...contactInfo });
+        setContactInfoDialogOpen(true);
       },
-      openSummaryDialog(summarySection: ResumeSection) {
+      openSummaryDialog(summaryContent?: string) {
+        setSummaryToEdit(summaryContent ?? null);
         setSummaryDialogOpen(true);
-        setSummaryToEdit({ ...summarySection });
       },
-      openExperienceDialog(experienceSection: ResumeSection) {
+      openSkillsCategoryDialog(sc?: SkillCategory) {
+        setSkillToEdit(sc ? { ...sc } : null);
+        setSkillsDialogOpen(true);
+      },
+      openExperienceDialog(experienceId?: string) {
+        setExperienceIdToEdit(experienceId);
         setExperienceDialogOpen(true);
-        setExperienceToEdit({ ...experienceSection });
       },
-      openEducationDialog(educationSection: ResumeSection) {
+      openEducationDialog(educationId?: string) {
+        setEducationIdToEdit(educationId);
         setEducationDialogOpen(true);
-        setEducationToEdit({ ...educationSection });
       },
-      openCertificationDialog(certificationSection: ResumeSection) {
+      openCertificationDialog(certificationId?: string) {
+        setCertificationIdToEdit(certificationId);
         setCertificationDialogOpen(true);
-        setCertificationToEdit({ ...certificationSection });
       },
     }));
-    const summarySection = resume?.ResumeSections?.find(
-      (section) => section.sectionType === SectionType.SUMMARY,
-    );
-    const experienceSection = resume?.ResumeSections?.find(
-      (section) => section.sectionType === SectionType.EXPERIENCE,
-    );
-    const educationSection = resume?.ResumeSections?.find(
-      (section) => section.sectionType === SectionType.EDUCATION,
-    );
-    const certificationSection = resume?.ResumeSections?.find(
-      (section) => section.sectionType === SectionType.CERTIFICATION,
-    );
-    const resetExperienceToEdit = () => {
-      setExperienceToEdit(null);
+
+    const openContactInfoDialog = () => {
+      setContactInfoToEdit(null);
+      setContactInfoDialogOpen(true);
     };
-    const resetEducationToEdit = () => {
-      setEducationToEdit(null);
+    const openSummaryDialog = () => {
+      setSummaryToEdit(null);
+      setSummaryDialogOpen(true);
     };
-    const resetCertificationToEdit = () => {
-      setCertificationToEdit(null);
+    const openSkillsDialog = () => {
+      setSkillToEdit(null);
+      setSkillsDialogOpen(true);
     };
-    const openContactInfoDialog = () => setContactInfoDialogOpen(true);
-    const openSummaryDialog = () => setSummaryDialogOpen(true);
     const openExperienceDialog = () => {
-      if (experienceToEdit) {
-        resetExperienceToEdit();
-      }
+      setExperienceIdToEdit(undefined);
       setExperienceDialogOpen(true);
     };
     const openEducationDialog = () => {
-      if (educationToEdit) {
-        resetEducationToEdit();
-      }
+      setEducationIdToEdit(undefined);
       setEducationDialogOpen(true);
     };
     const openCertificationDialog = () => {
-      if (certificationToEdit) {
-        resetCertificationToEdit();
-      }
+      setCertificationIdToEdit(undefined);
       setCertificationDialogOpen(true);
     };
+
     return (
       <>
         <DropdownMenu>
@@ -135,16 +122,22 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={openContactInfoDialog}
-                disabled={!!resume?.ContactInfo}
+                disabled={!!resume?.contactInfo}
               >
                 Add Contact Info
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={openSummaryDialog}
-                disabled={!!summarySection}
+                disabled={!!resume?.summary}
               >
                 Add Summary
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={openSkillsDialog}
+              >
+                Add Skills
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
@@ -167,6 +160,7 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+
         <AddContactInfo
           resumeId={resume?.id}
           dialogOpen={contactInfoDialogOpen}
@@ -177,28 +171,34 @@ const AddResumeSection = forwardRef<AddResumeSectionRef, AddResumeSectionProps>(
           resumeId={resume?.id}
           dialogOpen={summaryDialogOpen}
           setDialogOpen={setSummaryDialogOpen}
-          summaryToEdit={summaryToEdit}
+          summaryContent={summaryToEdit}
+        />
+        <AddSkills
+          resumeId={resume?.id}
+          dialogOpen={skillsDialogOpen}
+          setDialogOpen={setSkillsDialogOpen}
+          skillToEdit={skillToEdit}
         />
         <AddExperience
           resumeId={resume?.id}
-          sectionId={experienceSection?.id}
+          experienceId={experienceIdToEdit}
+          experiences={resume?.experiences}
           dialogOpen={experienceDialogOpen}
           setDialogOpen={setExperienceDialogOpen}
-          experienceToEdit={experienceToEdit!}
         />
         <AddEducation
           resumeId={resume?.id}
-          sectionId={educationSection?.id}
+          educationId={educationIdToEdit}
+          educations={resume?.educations}
           dialogOpen={educationDialogOpen}
           setDialogOpen={setEducationDialogOpen}
-          educationToEdit={educationToEdit!}
         />
         <AddCertification
           resumeId={resume?.id}
-          sectionId={certificationSection?.id}
+          certificationId={certificationIdToEdit}
+          certifications={resume?.certifications}
           dialogOpen={certificationDialogOpen}
           setDialogOpen={setCertificationDialogOpen}
-          certificationToEdit={certificationToEdit!}
         />
       </>
     );

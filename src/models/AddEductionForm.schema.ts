@@ -3,9 +3,6 @@ import { z } from "zod";
 export const AddEducationFormSchema = z.object({
   id: z.string().optional(),
   resumeId: z.string().optional(),
-  sectionId: z.string().optional(),
-  sectionTitle: z.string().default("Education").optional(),
-  sectionType: z.string().optional(),
   institution: z
     .string({
       error: "Institution name is required.",

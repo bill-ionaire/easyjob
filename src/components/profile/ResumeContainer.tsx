@@ -1,90 +1,39 @@
 "use client";
-import { Resume, ResumeSection, SectionType } from "@/models/profile.model";
+import { Resume, SkillCategory } from "@/models/profile.model";
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "../ui/use-toast";
 import SummarySectionCard from "./SummarySectionCard";
+import SkillsCard from "./SkillsCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
 import CertificationCard from "./CertificationCard";
-import AiResumeReviewSection from "./AiResumeReviewSection";
-import { DownloadFileButton } from "./DownloadFileButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { MoreHorizontal, FileDown } from "lucide-react";
 
 function ResumeContainer({ resume }: { resume: Resume }) {
-  const router = useRouter();
   const resumeSectionRef = useRef<AddResumeSectionRef>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [pendingPdf, setPendingPdf] = useState<{
-    blob: Blob;
-    filename: string;
-  } | null>(null);
-  const [showAttachConfirm, setShowAttachConfirm] = useState(false);
-
-  const triggerDownload = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const uploadPdfAsAttachment = async (
-    blob: Blob,
-    filename: string,
-    replaceExisting: boolean,
-  ) => {
-    const formData = new FormData();
-    formData.append(
-      "file",
-      new File([blob], filename, { type: "application/pdf" }),
-    );
-    formData.append("title", resume.title);
-    formData.append("id", resume.id!);
-    if (replaceExisting && resume.FileId) {
-      formData.append("fileId", resume.FileId);
-    }
-    const res = await fetch("/api/profile/resume", {
-      method: "POST",
-      body: formData,
-    });
-    if (!res.ok) throw new Error("Upload failed");
-    router.refresh();
-  };
 
   const handleExportPdf = async () => {
     const hasName =
-      resume.ContactInfo?.firstName?.trim() ||
-      resume.ContactInfo?.lastName?.trim();
-    const hasSections = resume.ResumeSections?.some(
-      (s) =>
-        s.summary?.content ||
-        s.workExperiences?.length ||
-        s.educations?.length ||
-        s.licenseOrCertifications?.length,
-    );
-    if (!hasName && !hasSections) {
+      resume.contactInfo?.firstName?.trim() ||
+      resume.contactInfo?.lastName?.trim();
+    const hasContent =
+      resume.summary ||
+      resume.experiences?.length ||
+      resume.educations?.length ||
+      resume.certifications?.length;
+
+    if (!hasName && !hasContent) {
       toast({
         title: "Nothing to export",
         description:
@@ -96,105 +45,38 @@ function ResumeContainer({ resume }: { resume: Resume }) {
 
     setIsExporting(true);
     try {
-      const { generateResumePdfBlob } = await import("./resume-pdf");
-      const { blob, filename } = await generateResumePdfBlob(resume);
-
-      if (!resume.FileId) {
-        triggerDownload(blob, filename);
-        await uploadPdfAsAttachment(blob, filename, false);
-        toast({
-          title: "PDF exported",
-          description: "Saved to Downloads and attached to this resume.",
-        });
-      } else {
-        setPendingPdf({ blob, filename });
-        setShowAttachConfirm(true);
-      }
+      const { downloadResumePdf } = await import("./resume-pdf");
+      await downloadResumePdf(resume);
+      toast({ title: "PDF exported", description: "Saved to your Downloads folder." });
     } catch {
-      toast({
-        title: "Failed to generate PDF. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Failed to generate PDF. Please try again.", variant: "destructive" });
     } finally {
       setIsExporting(false);
     }
   };
 
-  const handleAttachChoice = async (choice: "replace" | "download-only") => {
-    if (!pendingPdf) return;
-    setShowAttachConfirm(false);
-    setIsExporting(true);
-    try {
-      const { blob, filename } = pendingPdf;
-      triggerDownload(blob, filename);
-      if (choice === "replace") {
-        await uploadPdfAsAttachment(blob, filename, true);
-        toast({
-          title: "PDF exported",
-          description: "Saved to Downloads and attachment replaced.",
-        });
-      } else {
-        toast({
-          title: "PDF exported",
-          description: "Saved to your Downloads folder.",
-        });
-      }
-    } catch {
-      toast({
-        title: "Failed to upload PDF. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-      setPendingPdf(null);
-    }
-  };
-  const { title, ContactInfo, ResumeSections } = resume ?? {};
-  const summarySection = ResumeSections?.find(
-    (section) => section.sectionType === SectionType.SUMMARY,
-  );
-  const experienceSection = ResumeSections?.find(
-    (section) => section.sectionType === SectionType.EXPERIENCE,
-  );
-  const educationSection = ResumeSections?.find(
-    (section) => section.sectionType === SectionType.EDUCATION,
-  );
-  const certificationSection = ResumeSections?.find(
-    (section) => section.sectionType === SectionType.CERTIFICATION,
-  );
+  const { title, contactInfo, summary, skills, experiences, educations, certifications } = resume ?? {};
+
   const openContactInfoDialog = () => {
-    resumeSectionRef.current?.openContactInfoDialog(ContactInfo!);
+    resumeSectionRef.current?.openContactInfoDialog(contactInfo!);
   };
   const openSummaryDialogForEdit = () => {
-    resumeSectionRef.current?.openSummaryDialog(summarySection!);
+    resumeSectionRef.current?.openSummaryDialog(summary ?? undefined);
+  };
+  const openSkillsCategoryDialogForEdit = (sc: SkillCategory) => {
+    resumeSectionRef.current?.openSkillsCategoryDialog(sc);
+  };
+  const openSkillsCategoryDialogForAdd = () => {
+    resumeSectionRef.current?.openSkillsCategoryDialog();
   };
   const openExperienceDialogForEdit = (experienceId: string) => {
-    const section: ResumeSection = {
-      ...experienceSection!,
-      workExperiences: experienceSection?.workExperiences?.filter(
-        (exp) => exp.id === experienceId,
-      ),
-    };
-    resumeSectionRef.current?.openExperienceDialog(section);
+    resumeSectionRef.current?.openExperienceDialog(experienceId);
   };
   const openEducationDialogForEdit = (educationId: string) => {
-    const section: ResumeSection = {
-      ...educationSection!,
-      educations: educationSection?.educations?.filter(
-        (edu) => edu.id === educationId,
-      ),
-    };
-    resumeSectionRef.current?.openEducationDialog(section);
+    resumeSectionRef.current?.openEducationDialog(educationId);
   };
   const openCertificationDialogForEdit = (certificationId: string) => {
-    const section: ResumeSection = {
-      ...certificationSection!,
-      licenseOrCertifications:
-        certificationSection?.licenseOrCertifications?.filter(
-          (cert) => cert.id === certificationId,
-        ),
-    };
-    resumeSectionRef.current?.openCertificationDialog(section);
+    resumeSectionRef.current?.openCertificationDialog(certificationId);
   };
 
   return (
@@ -203,17 +85,10 @@ function ResumeContainer({ resume }: { resume: Resume }) {
         <CardHeader className="flex-col gap-2 sm:flex-row sm:justify-between sm:items-center lg:grid lg:grid-cols-3 lg:items-center">
           <CardTitle>Resume</CardTitle>
           <CardDescription className="mt-0 lg:flex lg:justify-center">
-            {resume.FileId && resume.File?.filePath
-              ? DownloadFileButton(
-                  resume.File?.filePath,
-                  title,
-                  resume.File?.fileName,
-                )
-              : title}
+            {title}
           </CardDescription>
           <div className="flex items-center gap-2 flex-wrap lg:justify-end">
             <AddResumeSection resume={resume} ref={resumeSectionRef} />
-            <AiResumeReviewSection resume={resume} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="outline">
@@ -234,66 +109,44 @@ function ResumeContainer({ resume }: { resume: Resume }) {
           </div>
         </CardHeader>
       </Card>
-      {ContactInfo && (
+      {contactInfo && (
         <ContactInfoCard
-          contactInfo={ContactInfo}
+          contactInfo={contactInfo}
           openDialog={openContactInfoDialog}
         />
       )}
-      {summarySection && (
+      {summary && (
         <SummarySectionCard
-          summarySection={summarySection}
+          summary={summary}
           openDialogForEdit={openSummaryDialogForEdit}
         />
       )}
-      {experienceSection && (
+      {skills && skills.length > 0 && (
+        <SkillsCard
+          resumeId={resume.id!}
+          skills={skills}
+          openDialogForEdit={openSkillsCategoryDialogForEdit}
+          openDialogForAdd={openSkillsCategoryDialogForAdd}
+        />
+      )}
+      {experiences && experiences.length > 0 && (
         <ExperienceCard
-          experienceSection={experienceSection}
+          experiences={experiences}
           openDialogForEdit={openExperienceDialogForEdit}
         />
       )}
-      {educationSection && (
+      {educations && educations.length > 0 && (
         <EducationCard
-          educationSection={educationSection}
+          educations={educations}
           openDialogForEdit={openEducationDialogForEdit}
         />
       )}
-      {certificationSection && (
+      {certifications && certifications.length > 0 && (
         <CertificationCard
-          certificationSection={certificationSection}
+          certifications={certifications}
           openDialogForEdit={openCertificationDialogForEdit}
         />
       )}
-      <AlertDialog open={showAttachConfirm} onOpenChange={setShowAttachConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Replace existing attachment?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This resume already has a file attached. Would you like to replace
-              it with the exported PDF?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setShowAttachConfirm(false);
-                setPendingPdf(null);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <Button
-              variant="outline"
-              onClick={() => handleAttachChoice("download-only")}
-            >
-              Download only
-            </Button>
-            <AlertDialogAction onClick={() => handleAttachChoice("replace")}>
-              Replace attachment
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

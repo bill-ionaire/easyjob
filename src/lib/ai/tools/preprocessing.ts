@@ -9,8 +9,7 @@ import {
   Education,
   LicenseOrCertification,
   Resume,
-  ResumeSection,
-  SectionType,
+  SkillCategory,
   WorkExperience,
 } from "@/models/profile.model";
 import {
@@ -108,7 +107,7 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
       return parts.join("\n");
     };
 
-    const formatDate = (date: Date) => {
+    const formatDate = (date: Date | string) => {
       const d = new Date(date);
       return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
     };
@@ -118,15 +117,15 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
       return workExperiences
         .map((experience) => {
           const desc = removeHtmlTags(experience.description);
-          const startDate = formatDate(experience.startDate);
+          const startDate = formatDate(new Date(experience.startDate));
           const endDate =
             experience.currentJob || !experience.endDate
               ? "Present"
-              : formatDate(experience.endDate);
+              : formatDate(new Date(experience.endDate));
           const parts = [
-            `Company: ${experience.Company.label}`,
-            `Job Title: ${experience.jobTitle.label}`,
-            `Location: ${experience.location.label}`,
+            `Company: ${experience.company}`,
+            `Job Title: ${experience.jobTitle}`,
+            `Location: ${experience.location}`,
             `Dates: ${startDate} - ${endDate}`,
             desc ? `Description: ${desc}` : "",
           ].filter(Boolean);
@@ -140,21 +139,26 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
       return educations
         .map((education) => {
           const desc = removeHtmlTags(education.description);
-          const startDate = formatDate(education.startDate);
+          const startDate = formatDate(new Date(education.startDate));
           const endDate = education.endDate
-            ? formatDate(education.endDate)
+            ? formatDate(new Date(education.endDate))
             : "Present";
           const parts = [
             `Institution: ${education.institution}`,
             `Degree: ${education.degree}`,
             `Field of Study: ${education.fieldOfStudy}`,
-            `Location: ${education.location.label}`,
+            `Location: ${education.location}`,
             `Dates: ${startDate} - ${endDate}`,
             desc ? `Description: ${desc}` : "",
           ].filter(Boolean);
           return parts.join("\n");
         })
         .join("\n\n");
+    };
+
+    const formatSkills = (skills?: SkillCategory[]) => {
+      if (!skills || skills.length === 0) return "";
+      return skills.map((sc) => `${sc.label}: ${sc.details.join(", ")}`).join("\n");
     };
 
     const formatCertifications = (certs?: LicenseOrCertification[]) => {
@@ -177,47 +181,21 @@ export const convertResumeToText = (resume: Resume): Promise<string> => {
         .join("\n\n");
     };
 
-    const formatResumeSections = (sections?: ResumeSection[]) => {
-      if (!sections || sections.length === 0) return "";
-      return sections
-        .map((section) => {
-          switch (section.sectionType) {
-            case SectionType.SUMMARY: {
-              const content = removeHtmlTags(section.summary?.content);
-              return content ? `## SUMMARY\n${content}` : "";
-            }
-            case SectionType.EXPERIENCE: {
-              const content = formatWorkExperiences(section.workExperiences);
-              return content ? `## EXPERIENCE\n${content}` : "";
-            }
-            case SectionType.EDUCATION: {
-              const content = formatEducation(section.educations);
-              return content ? `## EDUCATION\n${content}` : "";
-            }
-            case SectionType.CERTIFICATION:
-            case SectionType.LICENSE: {
-              const content = formatCertifications(
-                section.licenseOrCertifications,
-              );
-              return content
-                ? `## ${section.sectionTitle.toUpperCase()}\n${content}`
-                : "";
-            }
-            default:
-              return "";
-          }
-        })
-        .filter(Boolean)
-        .join("\n\n");
-    };
-
-    const contactInfo = formatContactInfo(resume.ContactInfo);
-    const sections = formatResumeSections(resume.ResumeSections);
+    const contactText = formatContactInfo(resume.contactInfo);
+    const summaryText = resume.summary ? removeHtmlTags(resume.summary) : "";
+    const skillsText = formatSkills(resume.skills);
+    const experiencesText = formatWorkExperiences(resume.experiences);
+    const educationsText = formatEducation(resume.educations);
+    const certificationsText = formatCertifications(resume.certifications);
 
     const parts = [
       `# ${resume.title}`,
-      contactInfo ? `## CONTACT\n${contactInfo}` : "",
-      sections,
+      contactText ? `## CONTACT\n${contactText}` : "",
+      summaryText ? `## SUMMARY\n${summaryText}` : "",
+      skillsText ? `## SKILLS\n${skillsText}` : "",
+      experiencesText ? `## EXPERIENCE\n${experiencesText}` : "",
+      educationsText ? `## EDUCATION\n${educationsText}` : "",
+      certificationsText ? `## CERTIFICATIONS\n${certificationsText}` : "",
     ].filter(Boolean);
 
     return resolve(parts.join("\n\n"));

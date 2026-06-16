@@ -1,6 +1,6 @@
 "use client";
 import { AddCertificationFormSchema } from "@/models/addCertificationForm.schema";
-import { LicenseOrCertification, ResumeSection } from "@/models/profile.model";
+import { LicenseOrCertification } from "@/models/profile.model";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,19 +33,23 @@ import {
 
 type AddCertificationProps = {
   resumeId: string | undefined;
-  sectionId: string | undefined;
+  certificationId: string | undefined;
+  certifications: LicenseOrCertification[] | undefined;
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
-  certificationToEdit?: ResumeSection;
 };
 
 function AddCertification({
   resumeId,
-  sectionId,
+  certificationId,
+  certifications,
   dialogOpen,
   setDialogOpen,
-  certificationToEdit,
 }: AddCertificationProps) {
+  const certificationToEdit = certificationId
+    ? certifications?.find((c) => c.id === certificationId)
+    : undefined;
+
   const pageTitle = certificationToEdit
     ? "Edit Certification / License"
     : "Add Certification / License";
@@ -55,7 +59,6 @@ function AddCertification({
     resolver: zodResolver(AddCertificationFormSchema),
     defaultValues: {
       resumeId,
-      sectionId,
       noExpiration: false,
     },
   });
@@ -64,43 +67,37 @@ function AddCertification({
   const noExpirationValue = watch("noExpiration");
 
   useEffect(() => {
+    if (!dialogOpen) return;
     if (certificationToEdit) {
-      const cert: LicenseOrCertification =
-        certificationToEdit?.licenseOrCertifications?.at(0)!;
       reset(
         {
-          id: cert?.id,
-          title: cert?.title,
-          organization: cert?.organization,
-          issueDate: cert?.issueDate ? new Date(cert.issueDate) : undefined,
-          expirationDate: cert?.expirationDate
-            ? new Date(cert.expirationDate)
+          id: certificationToEdit.id,
+          resumeId,
+          title: certificationToEdit.title,
+          organization: certificationToEdit.organization,
+          issueDate: certificationToEdit.issueDate
+            ? new Date(certificationToEdit.issueDate)
             : undefined,
-          credentialUrl: cert?.credentialUrl ?? "",
-          noExpiration: !cert?.expirationDate,
+          expirationDate: certificationToEdit.expirationDate
+            ? new Date(certificationToEdit.expirationDate)
+            : undefined,
+          credentialUrl: certificationToEdit.credentialUrl ?? "",
+          noExpiration: !certificationToEdit.expirationDate,
         },
         { keepDefaultValues: true },
       );
     } else {
-      reset(
-        {
-          resumeId,
-          sectionId,
-        },
-        { keepDefaultValues: true },
-      );
+      reset({ resumeId, noExpiration: false }, { keepDefaultValues: true });
     }
-  }, [certificationToEdit, resumeId, sectionId, reset]);
+  }, [dialogOpen, certificationToEdit, resumeId, reset]);
 
   const onNoExpirationChange = (checked: boolean) => {
-    if (checked) {
-      resetField("expirationDate");
-    }
+    if (checked) resetField("expirationDate");
   };
 
   const onSubmit = (data: z.infer<typeof AddCertificationFormSchema>) => {
     startTransition(async () => {
-      const res = certificationToEdit?.licenseOrCertifications?.length
+      const res = certificationToEdit
         ? await updateCertification(data)
         : await addCertification(data);
       if (!res.success) {
@@ -122,8 +119,6 @@ function AddCertification({
     });
   };
 
-  const closeDialog = () => setDialogOpen(false);
-
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="h-full md:h-[85%] lg:max-h-screen md:max-w-[40rem] overflow-y-scroll">
@@ -135,33 +130,6 @@ function AddCertification({
             onSubmit={form.handleSubmit(onSubmit)}
             className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2"
           >
-            {/* SECTION TITLE */}
-            {!sectionId && (
-              <>
-                <div className="md:col-span-2">
-                  <FormField
-                    control={form.control}
-                    name="sectionTitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Section Title</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value ?? ""}
-                            placeholder="Ex: Certifications"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <hr className="md:col-span-2" />
-              </>
-            )}
-
-            {/* CERTIFICATION TITLE */}
             <div className="md:col-span-2">
               <FormField
                 control={form.control}
@@ -182,7 +150,6 @@ function AddCertification({
               />
             </div>
 
-            {/* ORGANIZATION */}
             <div className="md:col-span-2">
               <FormField
                 control={form.control}
@@ -203,7 +170,6 @@ function AddCertification({
               />
             </div>
 
-            {/* ISSUE DATE */}
             <div className="flex flex-col">
               <FormField
                 control={form.control}
@@ -223,7 +189,6 @@ function AddCertification({
               />
             </div>
 
-            {/* EXPIRATION DATE */}
             <div className="flex flex-col">
               <FormField
                 control={form.control}
@@ -243,7 +208,6 @@ function AddCertification({
               />
             </div>
 
-            {/* NO EXPIRATION */}
             <div className="flex items-center">
               <FormField
                 control={form.control}
@@ -266,7 +230,6 @@ function AddCertification({
               />
             </div>
 
-            {/* CREDENTIAL URL */}
             <div className="md:col-span-2">
               <FormField
                 control={form.control}
@@ -289,16 +252,14 @@ function AddCertification({
 
             <div className="md:col-span-2 mt-4">
               <DialogFooter>
-                <div>
-                  <Button
-                    type="reset"
-                    variant="outline"
-                    className="mt-2 md:mt-0 w-full"
-                    onClick={closeDialog}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <Button
+                  type="reset"
+                  variant="outline"
+                  className="mt-2 md:mt-0 w-full"
+                  onClick={() => setDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
                 <Button type="submit" disabled={!formState.isDirty}>
                   Save
                   {isPending && <Loader className="h-4 w-4 shrink-0 spinner" />}

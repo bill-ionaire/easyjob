@@ -1,9 +1,6 @@
 import { z } from "zod";
 
 export const AddContactInfoFormSchema = z.object({
-  id: z.string().optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
   resumeId: z.string().optional(),
   firstName: z
     .string({

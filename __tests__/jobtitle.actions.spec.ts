@@ -217,7 +217,6 @@ describe("Job Title Actions", () => {
   describe("deleteJobTitleById", () => {
     it("should delete a job title successfully", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as any).mockResolvedValue(0);
       (prisma.job.count as any).mockResolvedValue(0);
       const mockDeleted = { id: "title-1", label: "Developer" };
       (prisma.jobTitle.delete as any).mockResolvedValue(mockDeleted);
@@ -239,24 +238,8 @@ describe("Job Title Actions", () => {
       expect(prisma.jobTitle.delete).not.toHaveBeenCalled();
     });
 
-    it("should prevent deletion when work experiences exist", async () => {
-      (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as any).mockResolvedValue(2);
-
-      const result = await deleteJobTitleById("title-1");
-
-      expect(result).toEqual({
-        success: false,
-        message:
-          "Job title cannot be deleted due to its use in experience section of one of the resume! ",
-      });
-      expect(prisma.job.count).not.toHaveBeenCalled();
-      expect(prisma.jobTitle.delete).not.toHaveBeenCalled();
-    });
-
     it("should prevent deletion when associated jobs exist", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as any).mockResolvedValue(0);
       (prisma.job.count as any).mockResolvedValue(3);
 
       const result = await deleteJobTitleById("title-1");
@@ -271,7 +254,6 @@ describe("Job Title Actions", () => {
 
     it("should handle unexpected errors", async () => {
       (getCurrentUser as any).mockResolvedValue(mockUser);
-      (prisma.workExperience.count as any).mockResolvedValue(0);
       (prisma.job.count as any).mockResolvedValue(0);
       (prisma.jobTitle.delete as any).mockRejectedValue(
         new Error("Delete failed")
