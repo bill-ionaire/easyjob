@@ -10,11 +10,7 @@ export const getAllJobLocations = async (): Promise<any | undefined> => {
     if (!user) {
       throw new Error("Not authenticated");
     }
-    const list = await prisma.location.findMany({
-      where: {
-        createdBy: user.id,
-      },
-    });
+    const list = await prisma.location.findMany();
     return list;
   } catch (error) {
     const msg = "Failed to fetch job location list. ";
@@ -37,9 +33,6 @@ export const getJobLocationsList = async (
 
     const [data, total] = await Promise.all([
       prisma.location.findMany({
-        where: {
-          createdBy: user.id,
-        },
         skip,
         take: limit,
         ...(countBy
@@ -66,11 +59,7 @@ export const getJobLocationsList = async (
           },
         },
       }),
-      prisma.location.count({
-        where: {
-          createdBy: user.id,
-        },
-      }),
+      prisma.location.count(),
     ]);
     return { data, total };
   } catch (error) {

@@ -15,7 +15,7 @@ export const jobPostResolvers = {
       const skip = (page - 1) * limit
       const { filter } = args
 
-      const where: any = { userId }
+      const where: any = {}
       if (filter?.status) where.status = filter.status
       if (filter?.search) {
         where.OR = [
