@@ -287,16 +287,55 @@ export const jobApplicationResolvers = {
       if (!application) throw new Error('Application not found')
 
       const cv = args.cvData
-      const { randomUUID } = await import('crypto')
+
+      const skills = (cv.Skills ?? []).map((s: any) => ({
+        label: s.label ?? s.category ?? '',
+        details: Array.isArray(s.details) ? s.details : (s.items ?? []),
+      }))
+
+      const experiences = (cv.Experiences ?? []).map((e: any) => {
+        const endDate = e.end_date ?? e.endDate ?? null
+        return {
+          company: e.company ?? '',
+          jobTitle: e.title ?? e.jobTitle ?? '',
+          location: e.location ?? '',
+          startDate: e.start_date ?? e.startDate ?? '',
+          endDate: endDate || null,
+          currentJob: !endDate,
+          description: Array.isArray(e.highlights)
+            ? e.highlights.join('\n')
+            : (e.description ?? ''),
+        }
+      })
+
+      const educations = (cv.Education ?? cv.Educations ?? []).map((e: any) => ({
+        institution: e.institution ?? '',
+        degree: e.degree ?? '',
+        fieldOfStudy: e.fieldOfStudy ?? e.field_of_study ?? '',
+        location: e.location ?? '',
+        startDate: e.start_year ?? e.startDate ?? e.start_date ?? '',
+        endDate: e.end_year ?? e.endDate ?? e.end_date ?? null,
+        cgpa: e.cgpa ?? e.gpa ?? null,
+        description: e.description ?? null,
+      }))
+
+      const certifications = (cv.Certifications ?? cv.certifications ?? []).map((c: any) => ({
+        title: c.title ?? c.name ?? '',
+        organization: c.organization ?? c.issuer ?? '',
+        issueDate: c.issueDate ?? c.issue_date ?? null,
+        expirationDate: c.expirationDate ?? c.expiration_date ?? null,
+        credentialUrl: c.credentialUrl ?? c.url ?? null,
+      }))
+
       const resume = await ctx.prisma.resume.create({
         data: {
           userId: application.userId,
           title: cv.title ?? 'Generated Resume',
-          summary: cv.Summary ?? null,
-          skills: (cv.Skills ?? []).map((s: any) => ({ id: randomUUID(), label: s.label ?? s.category ?? '', details: Array.isArray(s.details) ? s.details : (s.items ?? []) })),
-          experiences: (cv.Experiences ?? []).map((e: any) => ({ id: randomUUID(), company: e.company ?? '', jobTitle: e.title ?? e.jobTitle ?? '', location: e.location ?? '', startDate: e.start_date ?? e.startDate ?? null, endDate: e.end_date ?? e.endDate ?? null, description: Array.isArray(e.highlights) ? e.highlights.join('\n') : (e.description ?? '') })),
-          educations: (cv.Education ?? []).map((e: any) => ({ id: randomUUID(), institution: e.institution ?? '', degree: e.degree ?? '', fieldOfStudy: e.fieldOfStudy ?? '', location: e.location ?? '', startDate: e.start_year ?? e.startDate ?? null, endDate: e.end_year ?? e.endDate ?? null })),
-          certifications: [],
+          summary: cv.Summary ?? cv.summary ?? null,
+          skills,
+          experiences,
+          educations,
+          certifications,
         },
       })
 
