@@ -47,12 +47,11 @@ vi.mock("@/components/ui/use-toast", () => ({
 
 const mockExperiences: WorkExperience[] = [
   {
-    id: "exp-1",
     company: "Tech Corp",
     jobTitle: "Software Engineer",
     location: "New York, NY",
-    startDate: new Date("2020-01-01"),
-    endDate: new Date("2022-12-31"),
+    startDate: "2020-01-01",
+    endDate: "2022-12-31",
     currentJob: false,
     description: "Worked on various projects",
   },
@@ -71,7 +70,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -87,7 +86,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId="exp-1"
+        experienceIndex={0}
         experiences={mockExperiences}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -103,7 +102,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -132,7 +131,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId="exp-1"
+        experienceIndex={0}
         experiences={mockExperiences}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -155,7 +154,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -176,7 +175,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -193,7 +192,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -220,7 +219,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -248,7 +247,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -297,7 +296,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId="exp-1"
+        experienceIndex={0}
         experiences={mockExperiences}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -341,7 +340,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -388,7 +387,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -431,7 +430,7 @@ describe("AddExperience Component", () => {
     render(
       <AddExperience
         resumeId={mockResumeId}
-        experienceId={undefined}
+        experienceIndex={undefined}
         experiences={undefined}
         dialogOpen={false}
         setDialogOpen={mockSetDialogOpen}

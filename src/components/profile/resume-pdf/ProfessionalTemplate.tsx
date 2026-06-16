@@ -5,7 +5,7 @@ import { Resume } from "@/models/profile.model";
 import { styles, SectionHeading } from "./primitives";
 import { ResumeHtmlNodes } from "./generateResumePdf";
 
-function formatDate(date: Date | undefined | null): string {
+function formatDate(date: Date | string | undefined | null): string {
   if (!date) return "Present";
   return format(new Date(date), "MMM yyyy");
 }
@@ -60,7 +60,7 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
           <View>
             <SectionHeading title="Skills" />
             {skills.map((sc, i) => (
-              <View key={sc.id ?? i} style={{ marginBottom: 3 }}>
+              <View key={i} style={{ marginBottom: 3 }}>
                 <Text style={styles.bodyText}>
                   <Text style={styles.bold}>{sc.label}: </Text>
                   {sc.details.join(", ")}
@@ -75,12 +75,12 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
           <View>
             <SectionHeading title="Experience" />
             {experiences.map((exp, i) => (
-              <View key={exp.id ?? i} style={{ marginBottom: 8 }} wrap={false}>
+              <View key={i} style={{ marginBottom: 8 }} wrap={false}>
                 <Text style={styles.entryTitle}>
                   {exp.jobTitle} — {exp.company}
                 </Text>
                 <Text style={styles.entryMeta}>
-                  {formatDate(exp.startDate as Date)} – {formatDate(exp.endDate as Date)} ·{" "}
+                  {exp.startDate} – {exp.endDate} ·{" "}
                   {exp.location}
                 </Text>
                 {htmlNodes.experiences[i]}
@@ -94,14 +94,14 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
           <View>
             <SectionHeading title="Education" />
             {educations.map((edu, i) => (
-              <View key={edu.id ?? i} style={{ marginBottom: 8 }} wrap={false}>
+              <View key={i} style={{ marginBottom: 8 }} wrap={false}>
                 <Text style={styles.entryTitle}>{edu.institution}</Text>
                 <Text style={styles.entryMeta}>
                   {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ")}
                 </Text>
                 <Text style={styles.entryMeta}>
-                  {formatDate(edu.startDate as Date)} –{" "}
-                  {edu.endDate ? formatDate(edu.endDate as Date) : "Present"} ·{" "}
+                  {edu.startDate} –{" "}
+                  {edu.endDate ? edu.endDate : "Present"} ·{" "}
                   {edu.location}
                 </Text>
                 {htmlNodes.educations[i]}
@@ -115,17 +115,17 @@ export function ProfessionalResumeDocument({ resume, htmlNodes }: Props) {
           <View>
             <SectionHeading title="Certifications" />
             {certifications.map((cert, i) => (
-              <View key={cert.id ?? i} style={{ marginBottom: 6 }} wrap={false}>
+              <View key={i} style={{ marginBottom: 6 }} wrap={false}>
                 <Text style={styles.entryTitle}>{cert.title}</Text>
                 <Text style={styles.entryMeta}>{cert.organization}</Text>
                 {(cert.issueDate || cert.expirationDate) && (
                   <Text style={styles.entryMeta}>
                     {cert.issueDate
-                      ? `Issued: ${formatDate(new Date(cert.issueDate as any))}`
+                      ? `Issued: ${formatDate(cert.issueDate)}`
                       : ""}
                     {cert.issueDate && cert.expirationDate ? " · " : ""}
                     {cert.expirationDate
-                      ? `Expires: ${formatDate(new Date(cert.expirationDate as any))}`
+                      ? `Expires: ${formatDate(cert.expirationDate)}`
                       : ""}
                   </Text>
                 )}

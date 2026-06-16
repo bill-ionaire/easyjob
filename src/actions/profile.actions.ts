@@ -180,7 +180,7 @@ export const addResumeSkills = async (
     if (!resume) throw new Error("Resume not found");
 
     const skills = (resume.skills as any[]) ?? [];
-    const newSkill = { id: crypto.randomUUID(), label: data.label, details: data.details };
+    const newSkill = { label: data.label, details: data.details };
     const updated = [...skills, newSkill];
 
     await prisma.resume.update({
@@ -208,8 +208,8 @@ export const updateResumeSkills = async (
     if (!resume) throw new Error("Resume not found");
 
     const skills = (resume.skills as any[]) ?? [];
-    const updated = skills.map((s: any) =>
-      s.id === data.id ? { ...s, label: data.label, details: data.details } : s,
+    const updated = skills.map((s: any, i: number) =>
+      i === data.index ? { label: data.label, details: data.details } : s,
     );
 
     await prisma.resume.update({
@@ -217,14 +217,14 @@ export const updateResumeSkills = async (
       data: { skills: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: updated.find((s: any) => s.id === data.id), success: true };
+    return { data: updated[data.index!], success: true };
   } catch (error) {
     return handleError(error, "Failed to update skills.");
   }
 };
 
 export const deleteSkillCategory = async (
-  id: string,
+  index: number,
   resumeId: string,
 ): Promise<any | undefined> => {
   try {
@@ -238,7 +238,7 @@ export const deleteSkillCategory = async (
     if (!resume) throw new Error("Resume not found");
 
     const skills = (resume.skills as any[]) ?? [];
-    const updated = skills.filter((s: any) => s.id !== id);
+    const updated = skills.filter((_: any, i: number) => i !== index);
 
     await prisma.resume.update({
       where: { id: resumeId },
@@ -268,7 +268,6 @@ export const addExperience = async (
 
     const experiences = (resume.experiences as any[]) ?? [];
     const newExp = {
-      id: crypto.randomUUID(),
       company: data.company,
       jobTitle: data.title,
       location: data.location,
@@ -304,10 +303,9 @@ export const updateExperience = async (
     if (!resume) throw new Error("Resume not found");
 
     const experiences = (resume.experiences as any[]) ?? [];
-    const updated = experiences.map((e: any) =>
-      e.id === data.id
+    const updated = experiences.map((e: any, i: number) =>
+      i === data.index
         ? {
-            ...e,
             company: data.company,
             jobTitle: data.title,
             location: data.location,
@@ -324,14 +322,14 @@ export const updateExperience = async (
       data: { experiences: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: updated.find((e: any) => e.id === data.id), success: true };
+    return { data: updated[data.index!], success: true };
   } catch (error) {
     return handleError(error, "Failed to update experience.");
   }
 };
 
 export const deleteExperience = async (
-  id: string,
+  index: number,
   resumeId: string,
 ): Promise<any | undefined> => {
   try {
@@ -344,7 +342,7 @@ export const deleteExperience = async (
     });
     if (!resume) throw new Error("Resume not found");
 
-    const updated = ((resume.experiences as any[]) ?? []).filter((e: any) => e.id !== id);
+    const updated = ((resume.experiences as any[]) ?? []).filter((_: any, i: number) => i !== index);
     await prisma.resume.update({ where: { id: resumeId }, data: { experiences: updated } });
     revalidatePath(`/dashboard/profile/resume/${resumeId}`);
     return { success: true };
@@ -370,7 +368,6 @@ export const addEducation = async (
 
     const educations = (resume.educations as any[]) ?? [];
     const newEdu = {
-      id: crypto.randomUUID(),
       institution: data.institution,
       degree: data.degree,
       fieldOfStudy: data.fieldOfStudy,
@@ -406,10 +403,9 @@ export const updateEducation = async (
     if (!resume) throw new Error("Resume not found");
 
     const educations = (resume.educations as any[]) ?? [];
-    const updated = educations.map((e: any) =>
-      e.id === data.id
+    const updated = educations.map((e: any, i: number) =>
+      i === data.index
         ? {
-            ...e,
             institution: data.institution,
             degree: data.degree,
             fieldOfStudy: data.fieldOfStudy,
@@ -426,14 +422,14 @@ export const updateEducation = async (
       data: { educations: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: updated.find((e: any) => e.id === data.id), success: true };
+    return { data: updated[data.index!], success: true };
   } catch (error) {
     return handleError(error, "Failed to update education.");
   }
 };
 
 export const deleteEducation = async (
-  id: string,
+  index: number,
   resumeId: string,
 ): Promise<any | undefined> => {
   try {
@@ -446,7 +442,7 @@ export const deleteEducation = async (
     });
     if (!resume) throw new Error("Resume not found");
 
-    const updated = ((resume.educations as any[]) ?? []).filter((e: any) => e.id !== id);
+    const updated = ((resume.educations as any[]) ?? []).filter((_: any, i: number) => i !== index);
     await prisma.resume.update({ where: { id: resumeId }, data: { educations: updated } });
     revalidatePath(`/dashboard/profile/resume/${resumeId}`);
     return { success: true };
@@ -472,7 +468,6 @@ export const addCertification = async (
 
     const certifications = (resume.certifications as any[]) ?? [];
     const newCert = {
-      id: crypto.randomUUID(),
       title: data.title,
       organization: data.organization,
       issueDate: data.issueDate ?? null,
@@ -506,10 +501,9 @@ export const updateCertification = async (
     if (!resume) throw new Error("Resume not found");
 
     const certifications = (resume.certifications as any[]) ?? [];
-    const updated = certifications.map((c: any) =>
-      c.id === data.id
+    const updated = certifications.map((c: any, i: number) =>
+      i === data.index
         ? {
-            ...c,
             title: data.title,
             organization: data.organization,
             issueDate: data.issueDate ?? null,
@@ -524,14 +518,14 @@ export const updateCertification = async (
       data: { certifications: updated },
     });
     revalidatePath(`/dashboard/profile/resume/${data.resumeId}`);
-    return { data: updated.find((c: any) => c.id === data.id), success: true };
+    return { data: updated[data.index!], success: true };
   } catch (error) {
     return handleError(error, "Failed to update certification.");
   }
 };
 
 export const deleteCertification = async (
-  id: string,
+  index: number,
   resumeId: string,
 ): Promise<any | undefined> => {
   try {
@@ -544,7 +538,7 @@ export const deleteCertification = async (
     });
     if (!resume) throw new Error("Resume not found");
 
-    const updated = ((resume.certifications as any[]) ?? []).filter((c: any) => c.id !== id);
+    const updated = ((resume.certifications as any[]) ?? []).filter((_: any, i: number) => i !== index);
     await prisma.resume.update({ where: { id: resumeId }, data: { certifications: updated } });
     revalidatePath(`/dashboard/profile/resume/${resumeId}`);
     return { success: true };

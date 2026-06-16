@@ -13,22 +13,22 @@ import { format } from "date-fns";
 
 interface CertificationCardProps {
   certifications: LicenseOrCertification[];
-  openDialogForEdit: (id: string) => void;
+  openDialogForEdit: (index: number) => void;
 }
 
 function CertificationCard({ certifications, openDialogForEdit }: CertificationCardProps) {
   return (
     <>
       <CardTitle className="pl-6 py-3">Certifications</CardTitle>
-      {certifications.map(({ id, title, organization, issueDate, expirationDate, credentialUrl }) => (
-        <Card key={id}>
+      {certifications.map((cert, index) => (
+        <Card key={`${cert.title}_${cert.organization}`}>
           <CardHeader className="p-2 pb-0 flex-row justify-between relative">
-            <CardTitle className="text-xl pl-4">{title}</CardTitle>
+            <CardTitle className="text-xl pl-4">{cert.title}</CardTitle>
             <Button
               variant="ghost"
               size="sm"
               className="h-8 gap-1 absolute top-0 right-1"
-              onClick={() => openDialogForEdit(id!)}
+              onClick={() => openDialogForEdit(index)}
             >
               <Edit className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -37,21 +37,21 @@ function CertificationCard({ certifications, openDialogForEdit }: CertificationC
             </Button>
           </CardHeader>
           <CardContent>
-            <h3>{organization}</h3>
+            <h3>{cert.organization}</h3>
             <CardDescription>
-              {issueDate && (
-                <>Issued: {format(new Date(issueDate), "MMM yyyy")}</>
+              {cert.issueDate && (
+                <>Issued: {format(new Date(cert.issueDate), "MMM yyyy")}</>
               )}
-              {issueDate && expirationDate && " · "}
-              {expirationDate ? (
-                <>Expires: {format(new Date(expirationDate), "MMM yyyy")}</>
+              {cert.issueDate && cert.expirationDate && " · "}
+              {cert.expirationDate ? (
+                <>Expires: {format(new Date(cert.expirationDate), "MMM yyyy")}</>
               ) : (
-                issueDate && " · No Expiration"
+                cert.issueDate && " · No Expiration"
               )}
             </CardDescription>
-            {credentialUrl && (
+            {cert.credentialUrl && (
               <a
-                href={credentialUrl}
+                href={cert.credentialUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm text-blue-500 hover:underline mt-1"

@@ -33,7 +33,7 @@ import {
 
 type AddCertificationProps = {
   resumeId: string | undefined;
-  certificationId: string | undefined;
+  certificationIndex: number | undefined;
   certifications: LicenseOrCertification[] | undefined;
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
@@ -41,13 +41,13 @@ type AddCertificationProps = {
 
 function AddCertification({
   resumeId,
-  certificationId,
+  certificationIndex,
   certifications,
   dialogOpen,
   setDialogOpen,
 }: AddCertificationProps) {
-  const certificationToEdit = certificationId
-    ? certifications?.find((c) => c.id === certificationId)
+  const certificationToEdit = certificationIndex !== undefined
+    ? certifications?.[certificationIndex]
     : undefined;
 
   const pageTitle = certificationToEdit
@@ -71,7 +71,7 @@ function AddCertification({
     if (certificationToEdit) {
       reset(
         {
-          id: certificationToEdit.id,
+          index: certificationIndex,
           resumeId,
           title: certificationToEdit.title,
           organization: certificationToEdit.organization,
@@ -89,7 +89,7 @@ function AddCertification({
     } else {
       reset({ resumeId, noExpiration: false }, { keepDefaultValues: true });
     }
-  }, [dialogOpen, certificationToEdit, resumeId, reset]);
+  }, [dialogOpen, certificationToEdit, certificationIndex, resumeId, reset]);
 
   const onNoExpirationChange = (checked: boolean) => {
     if (checked) resetField("expirationDate");

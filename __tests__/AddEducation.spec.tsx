@@ -41,7 +41,6 @@ vi.mock("@/components/TiptapEditor", () => ({
 
 const mockEducations: Education[] = [
   {
-    id: "edu-1",
     institution: "Stanford University",
     degree: "Bachelor's",
     fieldOfStudy: "Computer Science",
@@ -65,7 +64,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId={undefined}
+        educationIndex={undefined}
         educations={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -81,7 +80,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId="edu-1"
+        educationIndex={0}
         educations={mockEducations}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -97,7 +96,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId={undefined}
+        educationIndex={undefined}
         educations={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -120,7 +119,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId="edu-1"
+        educationIndex={0}
         educations={mockEducations}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -149,7 +148,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId={undefined}
+        educationIndex={undefined}
         educations={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -170,7 +169,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId={undefined}
+        educationIndex={undefined}
         educations={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -198,7 +197,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId={undefined}
+        educationIndex={undefined}
         educations={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -246,7 +245,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId="edu-1"
+        educationIndex={0}
         educations={mockEducations}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -292,7 +291,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId={undefined}
+        educationIndex={undefined}
         educations={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -339,7 +338,7 @@ describe("AddEducation Component", () => {
     render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId={undefined}
+        educationIndex={undefined}
         educations={undefined}
         dialogOpen={true}
         setDialogOpen={mockSetDialogOpen}
@@ -382,7 +381,7 @@ describe("AddEducation Component", () => {
     const { container } = render(
       <AddEducation
         resumeId={mockResumeId}
-        educationId={undefined}
+        educationIndex={undefined}
         educations={undefined}
         dialogOpen={false}
         setDialogOpen={mockSetDialogOpen}

@@ -9,27 +9,26 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
-import { format } from "date-fns";
 import { TipTapContentViewer } from "../TipTapContentViewer";
 
 interface ExperienceCardProps {
   experiences: WorkExperience[];
-  openDialogForEdit: (id: string) => void;
+  openDialogForEdit: (index: number) => void;
 }
 
 function ExperienceCard({ experiences, openDialogForEdit }: ExperienceCardProps) {
   return (
     <>
       <CardTitle className="pl-6 py-3">Experience</CardTitle>
-      {experiences.map(({ id, jobTitle, company, location, startDate, endDate, description }) => (
-        <Card key={id}>
+      {experiences.map((exp, index) => (
+        <Card key={`${exp.company}_${exp.jobTitle}_${exp.startDate}`}>
           <CardHeader className="p-2 pb-0 flex-row justify-between relative">
-            <CardTitle className="text-xl pl-4">{jobTitle}</CardTitle>
+            <CardTitle className="text-xl pl-4">{exp.jobTitle}</CardTitle>
             <Button
               variant="ghost"
               size="sm"
               className="h-8 gap-1 absolute top-0 right-1"
-              onClick={() => openDialogForEdit(id!)}
+              onClick={() => openDialogForEdit(index)}
             >
               <Edit className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -38,15 +37,15 @@ function ExperienceCard({ experiences, openDialogForEdit }: ExperienceCardProps)
             </Button>
           </CardHeader>
           <CardContent>
-            <h3>{company}</h3>
+            <h3>{exp.company}</h3>
             <CardDescription>
-              {format(new Date(startDate), "MMM yyyy")} -{" "}
-              {endDate ? format(new Date(endDate), "MMM yyyy") : "Present"}
+              {exp.startDate} -{" "}
+              {exp.endDate ? exp.endDate : "Present"}
               <br />
-              {location}
+              {exp.location}
             </CardDescription>
             <div className="pt-2">
-              <TipTapContentViewer content={description ?? ""} />
+              <TipTapContentViewer content={exp.description ?? ""} />
             </div>
           </CardContent>
         </Card>

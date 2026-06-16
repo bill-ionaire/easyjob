@@ -10,7 +10,7 @@ import { toast } from "../ui/use-toast";
 interface SkillsCardProps {
   resumeId: string;
   skills: SkillCategory[];
-  openDialogForEdit: (skillCategory: SkillCategory) => void;
+  openDialogForEdit: (sc: SkillCategory, index: number) => void;
   openDialogForAdd: () => void;
 }
 
@@ -22,9 +22,9 @@ function SkillsCard({
 }: SkillsCardProps) {
   const [isPending, startTransition] = useTransition();
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (index: number) => {
     startTransition(async () => {
-      const res = await deleteSkillCategory(id, resumeId);
+      const res = await deleteSkillCategory(index, resumeId);
       if (!res.success) {
         toast({ variant: "destructive", title: "Failed to delete skill." });
       }
@@ -48,8 +48,8 @@ function SkillsCard({
         </Button>
       </CardHeader>
       <CardContent className="space-y-1">
-        {skills.map((sc) => (
-          <div key={sc.id} className="flex items-start justify-between group">
+        {skills.map((sc, index) => (
+          <div key={sc.label} className="flex items-start justify-between group">
             <p className="text-sm">
               <span className="font-semibold">{sc.label}:</span>{" "}
               {sc.details.join(", ")}
@@ -59,7 +59,7 @@ function SkillsCard({
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0"
-                onClick={() => openDialogForEdit(sc)}
+                onClick={() => openDialogForEdit(sc, index)}
               >
                 <Edit className="h-3 w-3" />
               </Button>
@@ -68,7 +68,7 @@ function SkillsCard({
                 size="sm"
                 className="h-6 w-6 p-0 text-destructive"
                 disabled={isPending}
-                onClick={() => handleDelete(sc.id!)}
+                onClick={() => handleDelete(index)}
               >
                 <Trash2 className="h-3 w-3" />
               </Button>

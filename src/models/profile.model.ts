@@ -26,35 +26,31 @@ export interface ContactInfo {
 }
 
 export interface SkillCategory {
-  id?: string;
   label: string;
   details: string[];
 }
 
 export interface WorkExperience {
-  id?: string;
   company: string;
   jobTitle: string;
   location: string;
-  startDate: Date | string;
-  endDate?: Date | string | null;
+  startDate: string;
+  endDate?: string | null;
   currentJob?: boolean;
   description?: string;
 }
 
 export interface Education {
-  id?: string;
   institution: string;
   degree: string;
   fieldOfStudy: string;
   location: string;
-  startDate: Date | string;
-  endDate?: Date | string | null;
+  startDate:  string;
+  endDate?: string | null;
   description?: string;
 }
 
 export interface LicenseOrCertification {
-  id?: string;
   title: string;
   organization: string;
   issueDate?: Date | string | null;

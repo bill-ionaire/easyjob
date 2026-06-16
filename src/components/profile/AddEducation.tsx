@@ -31,7 +31,7 @@ import { addEducation, updateEducation } from "@/actions/profile.actions";
 
 type AddEducationProps = {
   resumeId: string | undefined;
-  educationId: string | undefined;
+  educationIndex: number | undefined;
   educations: Education[] | undefined;
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
@@ -39,13 +39,13 @@ type AddEducationProps = {
 
 function AddEducation({
   resumeId,
-  educationId,
+  educationIndex,
   educations,
   dialogOpen,
   setDialogOpen,
 }: AddEducationProps) {
-  const educationToEdit = educationId
-    ? educations?.find((e) => e.id === educationId)
+  const educationToEdit = educationIndex !== undefined
+    ? educations?.[educationIndex]
     : undefined;
 
   const pageTitle = educationToEdit ? "Edit Education" : "Add Education";
@@ -70,7 +70,7 @@ function AddEducation({
     if (educationToEdit) {
       reset(
         {
-          id: educationToEdit.id,
+          index: educationIndex,
           resumeId,
           institution: educationToEdit.institution,
           degree: educationToEdit.degree,
@@ -89,7 +89,7 @@ function AddEducation({
         { keepDefaultValues: true },
       );
     }
-  }, [dialogOpen, educationToEdit, resumeId, reset]);
+  }, [dialogOpen, educationToEdit, educationIndex, resumeId, reset]);
 
   const onDegreeCompleted = (completed: boolean) => {
     if (completed) resetField("endDate");

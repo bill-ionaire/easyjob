@@ -31,7 +31,7 @@ import { addExperience, updateExperience } from "@/actions/profile.actions";
 
 type AddExperienceProps = {
   resumeId: string | undefined;
-  experienceId: string | undefined;
+  experienceIndex: number | undefined;
   experiences: WorkExperience[] | undefined;
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
@@ -39,13 +39,13 @@ type AddExperienceProps = {
 
 function AddExperience({
   resumeId,
-  experienceId,
+  experienceIndex,
   experiences,
   dialogOpen,
   setDialogOpen,
 }: AddExperienceProps) {
-  const experienceToEdit = experienceId
-    ? experiences?.find((e) => e.id === experienceId)
+  const experienceToEdit = experienceIndex !== undefined
+    ? experiences?.[experienceIndex]
     : undefined;
 
   const pageTitle = experienceToEdit ? "Edit Experience" : "Add Experience";
@@ -63,7 +63,7 @@ function AddExperience({
     if (!dialogOpen) return;
     if (experienceToEdit) {
       reset({
-        id: experienceToEdit.id,
+        index: experienceIndex,
         resumeId,
         title: experienceToEdit.jobTitle,
         company: experienceToEdit.company,
@@ -76,7 +76,7 @@ function AddExperience({
     } else {
       reset({ resumeId }, { keepDefaultValues: true });
     }
-  }, [dialogOpen, experienceToEdit, reset, resumeId]);
+  }, [dialogOpen, experienceToEdit, experienceIndex, reset, resumeId]);
 
   const onSubmit = (data: z.infer<typeof AddExperienceFormSchema>) => {
     startTransition(async () => {

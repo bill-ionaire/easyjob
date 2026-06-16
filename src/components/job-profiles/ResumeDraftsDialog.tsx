@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client/react'
-import { Plus, FileText, Pencil, Trash2 } from 'lucide-react'
+import { Plus, FileText, Pencil, Trash2, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -80,6 +81,11 @@ export function ResumeDraftsDialog({ profile, open, onOpenChange }: Props) {
                       <span className="text-sm font-medium truncate">{d.title}</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      <Link href={`/dashboard/profile/resume/${d.id}`}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Preview & Edit">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </Link>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingDraft(d)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>

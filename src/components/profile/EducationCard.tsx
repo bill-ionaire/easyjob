@@ -14,22 +14,22 @@ import { TipTapContentViewer } from "../TipTapContentViewer";
 
 interface EducationCardProps {
   educations: Education[];
-  openDialogForEdit: (id: string) => void;
+  openDialogForEdit: (index: number) => void;
 }
 
 function EducationCard({ educations, openDialogForEdit }: EducationCardProps) {
   return (
     <>
       <CardTitle className="pl-6 py-3">Education</CardTitle>
-      {educations.map(({ id, institution, degree, location, fieldOfStudy, startDate, endDate, description }) => (
-        <Card key={id}>
+      {educations.map((edu, index) => (
+        <Card key={`${edu.institution}_${String(edu.startDate)}`}>
           <CardHeader className="p-2 pb-0 flex-row justify-between relative">
-            <CardTitle className="text-xl pl-4">{institution}</CardTitle>
+            <CardTitle className="text-xl pl-4">{edu.institution}</CardTitle>
             <Button
               variant="ghost"
               size="sm"
               className="h-8 gap-1 absolute top-0 right-1"
-              onClick={() => openDialogForEdit(id!)}
+              onClick={() => openDialogForEdit(index)}
             >
               <Edit className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -39,17 +39,17 @@ function EducationCard({ educations, openDialogForEdit }: EducationCardProps) {
           </CardHeader>
           <CardContent>
             <h3>
-              {degree}, {fieldOfStudy}
+              {edu.degree}, {edu.fieldOfStudy}
             </h3>
             <CardDescription>
-              {format(new Date(startDate), "MMM yyyy")} -{" "}
-              {endDate ? format(new Date(endDate), "MMM yyyy") : "Present"}
+              {format(new Date(edu.startDate), "MMM yyyy")} -{" "}
+              {edu.endDate ? format(new Date(edu.endDate), "MMM yyyy") : "Present"}
               <br />
-              {location}
+              {edu.location}
             </CardDescription>
-            {description && (
+            {edu.description && (
               <div className="pt-2">
-                <TipTapContentViewer content={description} />
+                <TipTapContentViewer content={edu.description} />
               </div>
             )}
           </CardContent>

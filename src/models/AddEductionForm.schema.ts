@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const AddEducationFormSchema = z.object({
-  id: z.string().optional(),
+  index: z.number().optional(),
   resumeId: z.string().optional(),
   institution: z
     .string({

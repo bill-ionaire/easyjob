@@ -31,6 +31,7 @@ interface AddSkillsProps {
   dialogOpen: boolean;
   setDialogOpen: (e: boolean) => void;
   skillToEdit?: SkillCategory | null;
+  skillIndex?: number;
 }
 
 function AddSkills({
@@ -38,6 +39,7 @@ function AddSkills({
   dialogOpen,
   setDialogOpen,
   skillToEdit,
+  skillIndex,
 }: AddSkillsProps) {
   const [isPending, startTransition] = useTransition();
   const isEditing = !!skillToEdit;
@@ -58,7 +60,7 @@ function AddSkills({
     if (skillToEdit) {
       reset(
         {
-          id: skillToEdit.id,
+          index: skillIndex,
           resumeId,
           label: skillToEdit.label,
           details: skillToEdit.details,
@@ -69,7 +71,7 @@ function AddSkills({
     } else {
       reset({ resumeId, label: "", details: [], detailsText: "" });
     }
-  }, [skillToEdit, resumeId, reset]);
+  }, [skillToEdit, skillIndex, resumeId, reset]);
 
   const onSubmit = (data: z.infer<typeof AddSkillsFormSchema> & { detailsText: string }) => {
     startTransition(async () => {

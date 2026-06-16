@@ -13,7 +13,6 @@ describe("convertResumeToText - certification sections", () => {
       ...baseResume,
       certifications: [
         {
-          id: "cert-1",
           title: "AWS Certified Solutions Architect",
           organization: "Amazon Web Services",
         },
@@ -31,7 +30,6 @@ describe("convertResumeToText - certification sections", () => {
       ...baseResume,
       certifications: [
         {
-          id: "cert-1",
           title: "AWS SAA",
           organization: "AWS",
           issueDate: new Date("2023-06-01"),
@@ -50,7 +48,6 @@ describe("convertResumeToText - certification sections", () => {
       ...baseResume,
       certifications: [
         {
-          id: "cert-1",
           title: "AWS SAA",
           organization: "AWS",
           issueDate: new Date("2023-06-01"),
@@ -67,7 +64,6 @@ describe("convertResumeToText - certification sections", () => {
       ...baseResume,
       certifications: [
         {
-          id: "cert-1",
           title: "AWS SAA",
           organization: "AWS",
         },
@@ -85,7 +81,6 @@ describe("convertResumeToText - certification sections", () => {
       ...baseResume,
       certifications: [
         {
-          id: "cert-1",
           title: "AWS SAA",
           organization: "AWS",
           credentialUrl: "https://credly.com/badges/abc",
@@ -111,8 +106,8 @@ describe("convertResumeToText - certification sections", () => {
     const resume: Resume = {
       ...baseResume,
       certifications: [
-        { id: "cert-1", title: "AWS SAA", organization: "Amazon" },
-        { id: "cert-2", title: "GCP Associate", organization: "Google" },
+        { title: "AWS SAA", organization: "Amazon" },
+        { title: "GCP Associate", organization: "Google" },
       ],
     };
 
@@ -128,7 +123,7 @@ describe("convertResumeToText - certification sections", () => {
       ...baseResume,
       summary: "Experienced engineer.",
       certifications: [
-        { id: "cert-1", title: "AWS SAA", organization: "Amazon" },
+        { title: "AWS SAA", organization: "Amazon" },
       ],
     };
 
