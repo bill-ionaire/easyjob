@@ -385,6 +385,23 @@ export const RESUME_DRAFT_QUERY = gql`
   }
 `
 
+export const RESUME_LINKED_APPLICATIONS_QUERY = gql`
+  query ResumeLinkedApplications($resumeId: ID!) {
+    jobApplications(filter: { resumeId: $resumeId }, limit: 50) {
+      items {
+        id
+        currentStatus
+        createdAt
+        jobPost {
+          id
+          title
+          postedBy
+        }
+      }
+    }
+  }
+`
+
 export const CREATE_JOB_PROFILE = gql`
   mutation CreateJobProfile($input: CreateJobProfileInput!) {
     createJobProfile(input: $input) {

@@ -1,5 +1,5 @@
 'use client'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useQuery } from '@apollo/client/react'
 import { ArrowLeft, Star } from 'lucide-react'
 import Link from 'next/link'
@@ -13,6 +13,8 @@ import { ResumeDraftsPageView } from './ResumeDraftsPageView'
 
 export function ProfilePageView() {
   const { id: profileId } = useParams<{ id: string }>()
+  const searchParams = useSearchParams()
+  const defaultTab = searchParams.get('tab') ?? 'basic-info'
 
   const { data, loading } = useQuery(JOB_PROFILE_QUERY, {
     variables: { id: profileId },
@@ -60,7 +62,7 @@ export function ProfilePageView() {
         </Badge>
       </div>
 
-      <Tabs defaultValue="basic-info">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="basic-info">Basic Info</TabsTrigger>
           <TabsTrigger value="resume-templates">
