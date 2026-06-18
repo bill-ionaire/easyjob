@@ -25,16 +25,10 @@ export type AddExperienceProps = {
   experienceIndex: number | undefined;
   experiences: WorkExperience[] | undefined;
   onClose: () => void;
-  variant?: "inline" | "dialog";
+  onLocalSave?: (exp: WorkExperience, index?: number) => void;
 };
 
-function AddExperience({
-  resumeId,
-  experienceIndex,
-  experiences,
-  onClose,
-  variant = "inline",
-}: AddExperienceProps) {
+function AddExperience({ resumeId, experienceIndex, experiences, onClose, onLocalSave }: AddExperienceProps) {
   const experienceToEdit =
     experienceIndex !== undefined ? experiences?.[experienceIndex] : undefined;
 
@@ -67,6 +61,23 @@ function AddExperience({
   const { formState } = form;
 
   const onSubmit = (data: z.infer<typeof AddExperienceFormSchema>) => {
+    if (onLocalSave) {
+      onLocalSave(
+        {
+          jobTitle: data.title,
+          company: data.company,
+          location: data.location ?? "",
+          startDate: data.startDate,
+          endDate: data.endDate ?? null,
+          currentJob: data.currentJob ?? false,
+          description: data.jobDescription,
+        },
+        experienceIndex,
+      );
+      form.reset(data);
+      onClose();
+      return;
+    }
     startTransition(async () => {
       const res = isEdit ? await updateExperience(data) : await addExperience(data);
       if (!res.success) {
@@ -82,119 +93,6 @@ function AddExperience({
     });
   };
 
-  const formContent = (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="grid grid-cols-1 md:grid-cols-2 gap-3"
-      >
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Job Title</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g. Software Engineer" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="company"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Company</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g. Acme Corp" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="location"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Location</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g. Toronto, ON" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="startDate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Start Date</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g. Jan 2022" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="endDate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>End Date</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="e.g. Mar 2024 (leave blank if current)"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="md:col-span-2">
-          <FormField
-            control={form.control}
-            name="jobDescription"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Job Description</FormLabel>
-                <FormControl>
-                  <TiptapEditor field={field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="md:col-span-2 flex justify-end gap-2 pt-1">
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" size="sm" disabled={!formState.isDirty || isPending}>
-            Save
-            {isPending && <Loader className="h-4 w-4 shrink-0 animate-spin ml-1" />}
-          </Button>
-        </div>
-      </form>
-    </Form>
-  );
-
-  if (variant === "dialog") {
-    return formContent;
-  }
-
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -203,7 +101,112 @@ function AddExperience({
           <X className="h-4 w-4" />
         </Button>
       </div>
-      {formContent}
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+        >
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Job Title</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="e.g. Software Engineer" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="company"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="e.g. Acme Corp" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="location"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="e.g. Toronto, ON" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="startDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Date</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="e.g. Jan 2022" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="endDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Date</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="e.g. Mar 2024 (leave blank if current)"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="md:col-span-2">
+            <FormField
+              control={form.control}
+              name="jobDescription"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Job Description</FormLabel>
+                  <FormControl>
+                    <TiptapEditor field={field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="md:col-span-2 flex justify-end gap-2 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={!formState.isDirty || isPending}>
+              Save
+              {isPending && <Loader className="h-4 w-4 shrink-0 animate-spin ml-1" />}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }

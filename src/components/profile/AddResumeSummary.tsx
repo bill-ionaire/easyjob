@@ -11,7 +11,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Loader, X } from "lucide-react";
-import { useEffect, useTransition } from "react";
+import { useTransition } from "react";
 import { toast } from "../ui/use-toast";
 import { z } from "zod";
 import TiptapEditor from "../TiptapEditor";
@@ -21,32 +21,32 @@ interface AddResumeSummaryProps {
   resumeId: string | undefined;
   summaryContent?: string | null;
   onClose: () => void;
+  onLocalSave?: (summary: string) => void;
 }
 
 function AddResumeSummary({
   resumeId,
   summaryContent,
   onClose,
+  onLocalSave,
 }: AddResumeSummaryProps) {
   const [isPending, startTransition] = useTransition();
   const isEditing = !!summaryContent;
 
   const form = useForm<z.infer<typeof AddSummarySectionFormSchema>>({
     resolver: zodResolver(AddSummarySectionFormSchema),
-    defaultValues: { resumeId, content: "" },
+    defaultValues: { resumeId, content: summaryContent ?? "" },
   });
 
-  const { reset, formState } = form;
-
-  useEffect(() => {
-    if (summaryContent) {
-      reset({ resumeId, content: summaryContent }, { keepDefaultValues: true });
-    } else {
-      reset({ resumeId, content: "" });
-    }
-  }, [summaryContent, resumeId, reset]);
+  const { formState } = form;
 
   const onSubmit = (data: z.infer<typeof AddSummarySectionFormSchema>) => {
+    if (onLocalSave) {
+      onLocalSave(data.content);
+      form.reset({ resumeId, content: data.content });
+      onClose();
+      return;
+    }
     startTransition(async () => {
       const res = isEditing
         ? await updateResumeSummary(data)
@@ -54,7 +54,7 @@ function AddResumeSummary({
       if (!res.success) {
         toast({ variant: "destructive", title: "Error!", description: res.message });
       } else {
-        reset();
+        form.reset();
         onClose();
         toast({
           variant: "success",

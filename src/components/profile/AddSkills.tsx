@@ -24,6 +24,7 @@ interface AddSkillsProps {
   skillToEdit?: SkillCategory | null;
   skillIndex?: number;
   onClose: () => void;
+  onLocalSave?: (skill: SkillCategory, index?: number) => void;
 }
 
 function AddSkills({
@@ -31,6 +32,7 @@ function AddSkills({
   skillToEdit,
   skillIndex,
   onClose,
+  onLocalSave,
 }: AddSkillsProps) {
   const [isPending, startTransition] = useTransition();
   const isEditing = !!skillToEdit;
@@ -60,6 +62,12 @@ function AddSkills({
   }, [skillToEdit, skillIndex, resumeId, reset]);
 
   const onSubmit = (data: z.infer<typeof AddSkillsFormSchema> & { detailsText: string }) => {
+    if (onLocalSave) {
+      onLocalSave({ label: data.label, details: data.details }, skillIndex);
+      reset(data);
+      onClose();
+      return;
+    }
     startTransition(async () => {
       const res = isEditing
         ? await updateResumeSkills(data)

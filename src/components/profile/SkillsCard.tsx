@@ -12,6 +12,7 @@ interface SkillsCardProps {
   skills: SkillCategory[];
   onEdit: (sc: SkillCategory, index: number) => void;
   onAdd: () => void;
+  onLocalDelete?: (index: number) => void;
 }
 
 function SkillsCard({
@@ -19,10 +20,15 @@ function SkillsCard({
   skills,
   onEdit,
   onAdd,
+  onLocalDelete,
 }: SkillsCardProps) {
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = (index: number) => {
+    if (onLocalDelete) {
+      onLocalDelete(index);
+      return;
+    }
     startTransition(async () => {
       const res = await deleteSkillCategory(index, resumeId);
       if (!res.success) {

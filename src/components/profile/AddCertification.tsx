@@ -26,6 +26,7 @@ type AddCertificationProps = {
   certificationIndex: number | undefined;
   certifications: LicenseOrCertification[] | undefined;
   onClose: () => void;
+  onLocalSave?: (cert: LicenseOrCertification, index?: number) => void;
 };
 
 function AddCertification({
@@ -33,6 +34,7 @@ function AddCertification({
   certificationIndex,
   certifications,
   onClose,
+  onLocalSave,
 }: AddCertificationProps) {
   const certificationToEdit =
     certificationIndex !== undefined
@@ -81,6 +83,21 @@ function AddCertification({
   };
 
   const onSubmit = (data: z.infer<typeof AddCertificationFormSchema>) => {
+    if (onLocalSave) {
+      onLocalSave(
+        {
+          title: data.title ?? "",
+          organization: data.organization ?? "",
+          issueDate: data.issueDate ?? null,
+          expirationDate: data.expirationDate ?? null,
+          credentialUrl: data.credentialUrl ?? undefined,
+        },
+        certificationIndex,
+      );
+      reset(data);
+      onClose();
+      return;
+    }
     startTransition(async () => {
       const res = certificationToEdit
         ? await updateCertification(data)

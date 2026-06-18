@@ -34,12 +34,14 @@ interface AddContactInfoProps {
   contactInfoToEdit?: ContactInfo | null;
   resumeId: string | undefined;
   onClose: () => void;
+  onLocalSave?: (contactInfo: ContactInfo) => void;
 }
 
 function AddContactInfo({
   contactInfoToEdit,
   resumeId,
   onClose,
+  onLocalSave,
 }: AddContactInfoProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -69,6 +71,21 @@ function AddContactInfo({
   }, [contactInfoToEdit, reset, resumeId]);
 
   const onSubmit = (data: z.infer<typeof AddContactInfoFormSchema>) => {
+    if (onLocalSave) {
+      onLocalSave({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        headline: data.headline || undefined,
+        phone: data.phone || undefined,
+        address: data.address || undefined,
+        github: data.github || undefined,
+        linkedin: data.linkedin || undefined,
+      });
+      reset(data);
+      onClose();
+      return;
+    }
     startTransition(async () => {
       const res = await saveContactInfo(data);
       if (!res.success) {

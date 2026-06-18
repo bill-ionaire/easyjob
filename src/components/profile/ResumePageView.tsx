@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, Download, Loader, PanelRightClose, PanelRightOpen, Plus } from "lucide-react";
-import { Resume, SkillCategory } from "@/models/profile.model";
+import { ArrowLeft, Download, Loader, PanelRightClose, PanelRightOpen, Plus, RotateCcw, Save } from "lucide-react";
+import { ContactInfo, Education, LicenseOrCertification, Resume, SkillCategory, WorkExperience } from "@/models/profile.model";
 import { Button } from "../ui/button";
 import AddResumeSection, { SectionKey } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
@@ -15,12 +15,11 @@ import CertificationCard from "./CertificationCard";
 import AddContactInfo from "./AddContactInfo";
 import AddResumeSummary from "./AddResumeSummary";
 import AddSkills from "./AddSkills";
-import AddExperience from "./AddExperience";
-import AddEducation from "./AddEducation";
 import AddCertification from "./AddCertification";
 import { generateResumePdfBlob } from "./resume-pdf/generateResumePdf";
 import type { ResumeHtmlNodes } from "./resume-pdf/generateResumePdf";
 import { toast } from "../ui/use-toast";
+import { saveFullResume } from "@/actions/profile.actions";
 
 const PdfViewerPanel = dynamic(
   () => import("./resume-pdf/PdfViewerPanel").then((m) => ({ default: m.PdfViewerPanel })),
@@ -56,6 +55,12 @@ function SectionEmptyRow({ title, onAdd }: { title: string; onAdd: () => void })
 function PdfPanel({ resume }: { resume: Resume }) {
   const [htmlNodes, setHtmlNodes] = useState<ResumeHtmlNodes | null>(null);
 
+  const contentKey = [
+    resume.summary ?? "",
+    ...(resume.experiences?.map((e) => e.description ?? "") ?? []),
+    ...(resume.educations?.map((e) => e.description ?? "") ?? []),
+  ].join("\0");
+
   useEffect(() => {
     import("./resume-pdf/html-to-pdf").then(({ htmlToPdfNodes }) => {
       setHtmlNodes({
@@ -65,7 +70,7 @@ function PdfPanel({ resume }: { resume: Resume }) {
       });
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resume.id, String(resume.updatedAt)]);
+  }, [resume.id, contentKey]);
 
   if (!htmlNodes) {
     return (
@@ -88,26 +93,54 @@ export function ResumePageView({ resume }: { resume: Resume }) {
   const [showEdit, setShowEdit] = useState(true);
   const [activeForm, setActiveForm] = useState<ActiveForm | null>(null);
 
-  const { contactInfo, summary, skills, experiences, educations, certifications } = resume;
+  // Local-first state — changes apply to UI immediately, Save persists to backend
+  const [localResume, setLocalResume] = useState<Resume>(resume);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, startSaveTransition] = useTransition();
+  const savedRef = useRef<Resume>(resume);
+
+  const updateLocal = (updates: Partial<Resume>) => {
+    setLocalResume((prev) => ({ ...prev, ...updates }));
+    setIsDirty(true);
+  };
+
+  const handleGlobalSave = () => {
+    startSaveTransition(async () => {
+      const res = await saveFullResume(localResume);
+      if (!res.success) {
+        toast({ variant: "destructive", title: "Failed to save.", description: res.message });
+      } else {
+        savedRef.current = localResume;
+        setIsDirty(false);
+        toast({ variant: "success", description: "Resume saved successfully." });
+      }
+    });
+  };
+
+  const handleDiscard = () => {
+    setLocalResume(savedRef.current);
+    setIsDirty(false);
+    setActiveForm(null);
+  };
+
+  const { contactInfo, summary, skills, experiences, educations, certifications } = localResume;
   const backHref = resume.jobProfileId ? "/dashboard/job-profiles" : "/dashboard/profile";
 
   const [addedSections, setAddedSections] = useState<Set<SectionKey>>(() => {
     const s = new Set<SectionKey>();
-    if (contactInfo) s.add("contactInfo");
-    if (summary) s.add("summary");
-    if (skills?.length) s.add("skills");
-    if (experiences?.length) s.add("experience");
-    if (educations?.length) s.add("education");
-    if (certifications?.length) s.add("certification");
+    if (resume.contactInfo) s.add("contactInfo");
+    if (resume.summary) s.add("summary");
+    if (resume.skills?.length) s.add("skills");
+    if (resume.experiences?.length) s.add("experience");
+    if (resume.educations?.length) s.add("education");
+    if (resume.certifications?.length) s.add("certification");
     return s;
   });
 
-  // Adds a section to the panel; called from the dropdown
   const addSection = (section: SectionKey) => {
     setAddedSections((prev) => new Set([...prev, section]));
   };
 
-  // Toggles the inline form open/closed; used by "Add" buttons inside sections
   const toggleForm = (section: SectionKey, index?: number) => {
     setActiveForm((prev) =>
       prev?.type === section && prev?.index === index
@@ -116,7 +149,6 @@ export function ResumePageView({ resume }: { resume: Resume }) {
     );
   };
 
-  // Always opens; used by "Edit" buttons on existing items
   const openForm = (section: SectionKey, index?: number) => {
     setActiveForm({ type: section, ...(index !== undefined ? { index } : {}) } as ActiveForm);
   };
@@ -125,7 +157,7 @@ export function ResumePageView({ resume }: { resume: Resume }) {
 
   const handleDownload = async () => {
     try {
-      const { blob, filename } = await generateResumePdfBlob(resume);
+      const { blob, filename } = await generateResumePdfBlob(localResume);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -148,7 +180,36 @@ export function ResumePageView({ resume }: { resume: Resume }) {
             <span className="hidden sm:inline">Back</span>
           </Button>
         </Link>
-        <span className="font-semibold text-sm truncate flex-1 min-w-0">{resume.title}</span>
+        <span className="font-semibold text-sm truncate flex-1 min-w-0">{localResume.title}</span>
+
+        {isDirty && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 shrink-0 text-muted-foreground"
+              onClick={handleDiscard}
+              disabled={isSaving}
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span className="hidden sm:inline">Discard</span>
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5 shrink-0"
+              onClick={handleGlobalSave}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">{isSaving ? "Saving…" : "Save"}</span>
+            </Button>
+          </>
+        )}
+
         <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={handleDownload}>
           <Download className="h-4 w-4" />
           <span className="hidden sm:inline">Download</span>
@@ -167,9 +228,9 @@ export function ResumePageView({ resume }: { resume: Resume }) {
       {/* Split content area */}
       <div className="flex gap-4 flex-1 min-h-0">
 
-        {/* Left: PDF preview */}
+        {/* Left: PDF preview — uses localResume for real-time updates */}
         <div className="flex-1 min-w-0 min-h-0">
-          <PdfPanel resume={resume} />
+          <PdfPanel resume={localResume} />
         </div>
 
         {/* Right: edit panel */}
@@ -195,7 +256,12 @@ export function ResumePageView({ resume }: { resume: Resume }) {
                         <SectionEmptyRow title="Contact Info" onAdd={() => toggleForm("contactInfo")} />
                       )}
                   {activeForm?.type === "contactInfo" && (
-                    <AddContactInfo resumeId={resume.id} contactInfoToEdit={contactInfo} onClose={closeForm} />
+                    <AddContactInfo
+                      resumeId={resume.id}
+                      contactInfoToEdit={contactInfo}
+                      onClose={closeForm}
+                      onLocalSave={(info: ContactInfo) => updateLocal({ contactInfo: info })}
+                    />
                   )}
                 </>
               )}
@@ -211,7 +277,12 @@ export function ResumePageView({ resume }: { resume: Resume }) {
                         <SectionEmptyRow title="Summary" onAdd={() => toggleForm("summary")} />
                       )}
                   {activeForm?.type === "summary" && (
-                    <AddResumeSummary resumeId={resume.id} summaryContent={summary} onClose={closeForm} />
+                    <AddResumeSummary
+                      resumeId={resume.id}
+                      summaryContent={summary}
+                      onClose={closeForm}
+                      onLocalSave={(s: string) => updateLocal({ summary: s })}
+                    />
                   )}
                 </>
               )}
@@ -224,6 +295,9 @@ export function ResumePageView({ resume }: { resume: Resume }) {
                     skills={skills ?? []}
                     onEdit={(sc: SkillCategory, index: number) => openForm("skills", index)}
                     onAdd={() => toggleForm("skills")}
+                    onLocalDelete={(index: number) => {
+                      updateLocal({ skills: (skills ?? []).filter((_, i) => i !== index) });
+                    }}
                   />
                   {activeForm?.type === "skills" && (
                     <AddSkills
@@ -231,6 +305,14 @@ export function ResumePageView({ resume }: { resume: Resume }) {
                       skillToEdit={activeForm.index !== undefined ? skills?.[activeForm.index] : null}
                       skillIndex={activeForm.index}
                       onClose={closeForm}
+                      onLocalSave={(skill: SkillCategory, index?: number) => {
+                        const arr = skills ?? [];
+                        updateLocal({
+                          skills: index !== undefined
+                            ? arr.map((s, i) => (i === index ? skill : s))
+                            : [...arr, skill],
+                        });
+                      }}
                     />
                   )}
                 </>
@@ -238,40 +320,20 @@ export function ResumePageView({ resume }: { resume: Resume }) {
 
               {/* ── Experience ── */}
               {addedSections.has("experience") && (
-                <>
-                  <ExperienceCard
-                    resumeId={resume.id!}
-                    experiences={experiences ?? []}
-                    onAdd={() => toggleForm("experience")}
-                  />
-                  {activeForm?.type === "experience" && activeForm.index === undefined && (
-                    <AddExperience
-                      resumeId={resume.id}
-                      experienceIndex={undefined}
-                      experiences={experiences}
-                      onClose={closeForm}
-                    />
-                  )}
-                </>
+                <ExperienceCard
+                  resumeId={resume.id!}
+                  experiences={experiences ?? []}
+                  onLocalChange={(exps: WorkExperience[]) => updateLocal({ experiences: exps })}
+                />
               )}
 
               {/* ── Education ── */}
               {addedSections.has("education") && (
-                <>
-                  <EducationCard
-                    educations={educations ?? []}
-                    onEdit={(index: number) => openForm("education", index)}
-                    onAdd={() => toggleForm("education")}
-                  />
-                  {activeForm?.type === "education" && (
-                    <AddEducation
-                      resumeId={resume.id}
-                      educationIndex={activeForm.index}
-                      educations={educations}
-                      onClose={closeForm}
-                    />
-                  )}
-                </>
+                <EducationCard
+                  resumeId={resume.id!}
+                  educations={educations ?? []}
+                  onLocalChange={(edus: Education[]) => updateLocal({ educations: edus })}
+                />
               )}
 
               {/* ── Certifications ── */}
@@ -288,6 +350,14 @@ export function ResumePageView({ resume }: { resume: Resume }) {
                       certificationIndex={activeForm.index}
                       certifications={certifications}
                       onClose={closeForm}
+                      onLocalSave={(cert: LicenseOrCertification, index?: number) => {
+                        const arr = certifications ?? [];
+                        updateLocal({
+                          certifications: index !== undefined
+                            ? arr.map((c, i) => (i === index ? cert : c))
+                            : [...arr, cert],
+                        });
+                      }}
                     />
                   )}
                 </>

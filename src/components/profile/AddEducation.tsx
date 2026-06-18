@@ -13,55 +13,32 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { Switch } from "../ui/switch";
 import TiptapEditor from "../TiptapEditor";
 import { Button } from "../ui/button";
-import { useEffect, useTransition } from "react";
+import { useTransition } from "react";
 import { toast } from "../ui/use-toast";
 import { Loader, X } from "lucide-react";
 import { addEducation, updateEducation } from "@/actions/profile.actions";
 
-type AddEducationProps = {
+export type AddEducationProps = {
   resumeId: string | undefined;
   educationIndex: number | undefined;
   educations: Education[] | undefined;
   onClose: () => void;
+  onLocalSave?: (edu: Education, index?: number) => void;
 };
 
-function AddEducation({
-  resumeId,
-  educationIndex,
-  educations,
-  onClose,
-}: AddEducationProps) {
+function AddEducation({ resumeId, educationIndex, educations, onClose, onLocalSave }: AddEducationProps) {
   const educationToEdit =
     educationIndex !== undefined ? educations?.[educationIndex] : undefined;
 
-  const pageTitle = educationToEdit ? "Edit Education" : "Add Education";
+  const isEdit = !!educationToEdit;
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof AddEducationFormSchema>>({
     resolver: zodResolver(AddEducationFormSchema),
-    defaultValues: {
-      resumeId,
-      degreeCompleted: true,
-      institution: "",
-      degree: "",
-      fieldOfStudy: "",
-      location: "",
-      startDate: "",
-      endDate: "",
-      cgpa: "",
-    },
-  });
-
-  const { watch, reset, setValue, formState } = form;
-  const degreeCompletedValue = watch("degreeCompleted");
-
-  useEffect(() => {
-    if (educationToEdit) {
-      reset(
-        {
+    defaultValues: isEdit
+      ? {
           index: educationIndex,
           resumeId,
           institution: educationToEdit.institution,
@@ -71,16 +48,11 @@ function AddEducation({
           startDate: String(educationToEdit.startDate),
           endDate: educationToEdit.endDate ? String(educationToEdit.endDate) : "",
           cgpa: educationToEdit.cgpa ?? "",
-          description: educationToEdit.description,
-          degreeCompleted: !!educationToEdit.endDate,
-        },
-        { keepDefaultValues: true },
-      );
-    } else {
-      reset(
-        {
-          resumeId,
+          description: educationToEdit.description ?? "",
           degreeCompleted: true,
+        }
+      : {
+          resumeId,
           institution: "",
           degree: "",
           fieldOfStudy: "",
@@ -88,29 +60,42 @@ function AddEducation({
           startDate: "",
           endDate: "",
           cgpa: "",
+          description: "",
+          degreeCompleted: true,
         },
-        { keepDefaultValues: true },
-      );
-    }
-  }, [educationToEdit, educationIndex, resumeId, reset]);
+  });
 
-  const onDegreeCompleted = (completed: boolean) => {
-    if (!completed) setValue("endDate", "");
-  };
+  const { formState } = form;
 
   const onSubmit = (data: z.infer<typeof AddEducationFormSchema>) => {
+    if (onLocalSave) {
+      onLocalSave(
+        {
+          institution: data.institution,
+          degree: data.degree,
+          fieldOfStudy: data.fieldOfStudy,
+          location: data.location,
+          startDate: data.startDate,
+          endDate: data.endDate ?? null,
+          cgpa: data.cgpa || undefined,
+          description: data.description || undefined,
+        },
+        educationIndex,
+      );
+      form.reset(data);
+      onClose();
+      return;
+    }
     startTransition(async () => {
-      const res = educationToEdit
-        ? await updateEducation(data)
-        : await addEducation(data);
+      const res = isEdit ? await updateEducation(data) : await addEducation(data);
       if (!res.success) {
         toast({ variant: "destructive", title: "Error!", description: res.message });
       } else {
-        reset();
+        form.reset();
         onClose();
         toast({
           variant: "success",
-          description: `Education has been ${educationToEdit ? "updated" : "added"} successfully`,
+          description: `Education has been ${isEdit ? "updated" : "added"} successfully`,
         });
       }
     });
@@ -119,7 +104,7 @@ function AddEducation({
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">{pageTitle}</h3>
+        <h3 className="text-sm font-semibold">{isEdit ? "Edit Education" : "Add Education"}</h3>
         <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
@@ -176,7 +161,7 @@ function AddEducation({
             name="fieldOfStudy"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Field of study</FormLabel>
+                <FormLabel>Field of Study</FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="Ex: Computer Science" />
                 </FormControl>
@@ -209,31 +194,10 @@ function AddEducation({
                   <Input
                     {...field}
                     value={field.value ?? ""}
-                    placeholder="e.g. 2022"
+                    placeholder="e.g. 2022 (leave blank if current)"
                     maxLength={4}
-                    disabled={!degreeCompletedValue}
                   />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="degreeCompleted"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center gap-3 pt-1">
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={(c) => {
-                    field.onChange(c);
-                    onDegreeCompleted(c);
-                  }}
-                />
-                <FormLabel className="mb-0">
-                  {field.value ? "Degree Completed" : "Currently Studying"}
-                </FormLabel>
                 <FormMessage />
               </FormItem>
             )}
@@ -246,9 +210,7 @@ function AddEducation({
               <FormItem>
                 <FormLabel>
                   GPA / CGPA{" "}
-                  <span className="text-xs text-muted-foreground font-normal">
-                    (optional)
-                  </span>
+                  <span className="text-xs text-muted-foreground font-normal">(optional)</span>
                 </FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="e.g. 3.76/4.0" />
