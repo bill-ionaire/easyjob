@@ -169,6 +169,7 @@ export const JOB_APPLICATION_QUERY = gql`
       jobProfile {
         id
         name
+        email
         linkedin
         github
         phone
