@@ -1,26 +1,55 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, Download, Loader, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { ArrowLeft, Download, Loader, PanelRightClose, PanelRightOpen, Plus } from "lucide-react";
 import { Resume, SkillCategory } from "@/models/profile.model";
 import { Button } from "../ui/button";
-import AddResumeSection, { AddResumeSectionRef } from "./AddResumeSection";
+import AddResumeSection, { SectionKey } from "./AddResumeSection";
 import ContactInfoCard from "./ContactInfoCard";
 import SummarySectionCard from "./SummarySectionCard";
 import SkillsCard from "./SkillsCard";
 import ExperienceCard from "./ExperienceCard";
 import EducationCard from "./EducationCard";
 import CertificationCard from "./CertificationCard";
+import AddContactInfo from "./AddContactInfo";
+import AddResumeSummary from "./AddResumeSummary";
+import AddSkills from "./AddSkills";
+import AddExperience from "./AddExperience";
+import AddEducation from "./AddEducation";
+import AddCertification from "./AddCertification";
 import { generateResumePdfBlob } from "./resume-pdf/generateResumePdf";
 import type { ResumeHtmlNodes } from "./resume-pdf/generateResumePdf";
 import { toast } from "../ui/use-toast";
 
-// Dynamically import the PDF viewer so @react-pdf/renderer never runs on the server
 const PdfViewerPanel = dynamic(
   () => import("./resume-pdf/PdfViewerPanel").then((m) => ({ default: m.PdfViewerPanel })),
   { ssr: false },
 );
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ActiveForm =
+  | { type: "contactInfo"; index?: undefined }
+  | { type: "summary"; index?: undefined }
+  | { type: "skills"; index?: number }
+  | { type: "experience"; index?: number }
+  | { type: "education"; index?: number }
+  | { type: "certification"; index?: number };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function SectionEmptyRow({ title, onAdd }: { title: string; onAdd: () => void }) {
+  return (
+    <div className="flex items-center justify-between pl-4 pr-1 py-1">
+      <span className="text-sm font-semibold">{title}</span>
+      <Button variant="ghost" size="sm" className="h-7 gap-1" onClick={onAdd}>
+        <Plus className="h-3.5 w-3.5" />
+        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap text-xs">Add</span>
+      </Button>
+    </div>
+  );
+}
 
 // ─── PDF preview ──────────────────────────────────────────────────────────────
 
@@ -56,12 +85,43 @@ function PdfPanel({ resume }: { resume: Resume }) {
 // ─── Page view ────────────────────────────────────────────────────────────────
 
 export function ResumePageView({ resume }: { resume: Resume }) {
-  const sectionRef = useRef<AddResumeSectionRef>(null);
   const [showEdit, setShowEdit] = useState(true);
+  const [activeForm, setActiveForm] = useState<ActiveForm | null>(null);
 
   const { contactInfo, summary, skills, experiences, educations, certifications } = resume;
-
   const backHref = resume.jobProfileId ? "/dashboard/job-profiles" : "/dashboard/profile";
+
+  const [addedSections, setAddedSections] = useState<Set<SectionKey>>(() => {
+    const s = new Set<SectionKey>();
+    if (contactInfo) s.add("contactInfo");
+    if (summary) s.add("summary");
+    if (skills?.length) s.add("skills");
+    if (experiences?.length) s.add("experience");
+    if (educations?.length) s.add("education");
+    if (certifications?.length) s.add("certification");
+    return s;
+  });
+
+  // Adds a section to the panel; called from the dropdown
+  const addSection = (section: SectionKey) => {
+    setAddedSections((prev) => new Set([...prev, section]));
+  };
+
+  // Toggles the inline form open/closed; used by "Add" buttons inside sections
+  const toggleForm = (section: SectionKey, index?: number) => {
+    setActiveForm((prev) =>
+      prev?.type === section && prev?.index === index
+        ? null
+        : ({ type: section, ...(index !== undefined ? { index } : {}) } as ActiveForm)
+    );
+  };
+
+  // Always opens; used by "Edit" buttons on existing items
+  const openForm = (section: SectionKey, index?: number) => {
+    setActiveForm({ type: section, ...(index !== undefined ? { index } : {}) } as ActiveForm);
+  };
+
+  const closeForm = () => setActiveForm(null);
 
   const handleDownload = async () => {
     try {
@@ -118,58 +178,121 @@ export function ResumePageView({ resume }: { resume: Resume }) {
             {/* Edit panel header */}
             <div className="flex items-center justify-between shrink-0">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Editor</span>
-              <AddResumeSection resume={resume} ref={sectionRef} />
+              <AddResumeSection addedSections={addedSections} onOpen={addSection} />
             </div>
 
             {/* Scrollable section cards */}
             <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {!contactInfo && (
-                <button
-                  type="button"
-                  onClick={() => sectionRef.current?.openContactInfoDialog({ firstName: "", lastName: "", email: "" })}
-                  className="w-full rounded-lg border border-dashed p-3 text-sm text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors text-left"
-                >
-                  + Add contact info
-                </button>
+
+              {/* ── Contact Info ── */}
+              {addedSections.has("contactInfo") && (
+                <>
+                  {contactInfo
+                    ? activeForm?.type !== "contactInfo" && (
+                        <ContactInfoCard contactInfo={contactInfo} onEdit={() => openForm("contactInfo")} />
+                      )
+                    : activeForm?.type !== "contactInfo" && (
+                        <SectionEmptyRow title="Contact Info" onAdd={() => toggleForm("contactInfo")} />
+                      )}
+                  {activeForm?.type === "contactInfo" && (
+                    <AddContactInfo resumeId={resume.id} contactInfoToEdit={contactInfo} onClose={closeForm} />
+                  )}
+                </>
               )}
-              {contactInfo && (
-                <ContactInfoCard
-                  contactInfo={contactInfo}
-                  openDialog={() => sectionRef.current?.openContactInfoDialog(contactInfo)}
-                />
+
+              {/* ── Summary ── */}
+              {addedSections.has("summary") && (
+                <>
+                  {summary
+                    ? activeForm?.type !== "summary" && (
+                        <SummarySectionCard summary={summary} onEdit={() => openForm("summary")} />
+                      )
+                    : activeForm?.type !== "summary" && (
+                        <SectionEmptyRow title="Summary" onAdd={() => toggleForm("summary")} />
+                      )}
+                  {activeForm?.type === "summary" && (
+                    <AddResumeSummary resumeId={resume.id} summaryContent={summary} onClose={closeForm} />
+                  )}
+                </>
               )}
-              {summary && (
-                <SummarySectionCard
-                  summary={summary}
-                  openDialogForEdit={() => sectionRef.current?.openSummaryDialog(summary)}
-                />
+
+              {/* ── Skills ── */}
+              {addedSections.has("skills") && (
+                <>
+                  <SkillsCard
+                    resumeId={resume.id!}
+                    skills={skills ?? []}
+                    onEdit={(sc: SkillCategory, index: number) => openForm("skills", index)}
+                    onAdd={() => toggleForm("skills")}
+                  />
+                  {activeForm?.type === "skills" && (
+                    <AddSkills
+                      resumeId={resume.id}
+                      skillToEdit={activeForm.index !== undefined ? skills?.[activeForm.index] : null}
+                      skillIndex={activeForm.index}
+                      onClose={closeForm}
+                    />
+                  )}
+                </>
               )}
-              {skills && skills.length > 0 && (
-                <SkillsCard
-                  resumeId={resume.id!}
-                  skills={skills}
-                  openDialogForEdit={(sc: SkillCategory, index: number) => sectionRef.current?.openSkillsCategoryDialog(sc, index)}
-                  openDialogForAdd={() => sectionRef.current?.openSkillsCategoryDialog()}
-                />
+
+              {/* ── Experience ── */}
+              {addedSections.has("experience") && (
+                <>
+                  <ExperienceCard
+                    resumeId={resume.id!}
+                    experiences={experiences ?? []}
+                    onAdd={() => toggleForm("experience")}
+                  />
+                  {activeForm?.type === "experience" && activeForm.index === undefined && (
+                    <AddExperience
+                      resumeId={resume.id}
+                      experienceIndex={undefined}
+                      experiences={experiences}
+                      onClose={closeForm}
+                    />
+                  )}
+                </>
               )}
-              {experiences && experiences.length > 0 && (
-                <ExperienceCard
-                  experiences={experiences}
-                  openDialogForEdit={(index: number) => sectionRef.current?.openExperienceDialog(index)}
-                />
+
+              {/* ── Education ── */}
+              {addedSections.has("education") && (
+                <>
+                  <EducationCard
+                    educations={educations ?? []}
+                    onEdit={(index: number) => openForm("education", index)}
+                    onAdd={() => toggleForm("education")}
+                  />
+                  {activeForm?.type === "education" && (
+                    <AddEducation
+                      resumeId={resume.id}
+                      educationIndex={activeForm.index}
+                      educations={educations}
+                      onClose={closeForm}
+                    />
+                  )}
+                </>
               )}
-              {educations && educations.length > 0 && (
-                <EducationCard
-                  educations={educations}
-                  openDialogForEdit={(index: number) => sectionRef.current?.openEducationDialog(index)}
-                />
+
+              {/* ── Certifications ── */}
+              {addedSections.has("certification") && (
+                <>
+                  <CertificationCard
+                    certifications={certifications ?? []}
+                    onEdit={(index: number) => openForm("certification", index)}
+                    onAdd={() => toggleForm("certification")}
+                  />
+                  {activeForm?.type === "certification" && (
+                    <AddCertification
+                      resumeId={resume.id}
+                      certificationIndex={activeForm.index}
+                      certifications={certifications}
+                      onClose={closeForm}
+                    />
+                  )}
+                </>
               )}
-              {certifications && certifications.length > 0 && (
-                <CertificationCard
-                  certifications={certifications}
-                  openDialogForEdit={(index: number) => sectionRef.current?.openCertificationDialog(index)}
-                />
-              )}
+
             </div>
           </div>
         )}

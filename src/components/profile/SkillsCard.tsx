@@ -10,15 +10,15 @@ import { toast } from "../ui/use-toast";
 interface SkillsCardProps {
   resumeId: string;
   skills: SkillCategory[];
-  openDialogForEdit: (sc: SkillCategory, index: number) => void;
-  openDialogForAdd: () => void;
+  onEdit: (sc: SkillCategory, index: number) => void;
+  onAdd: () => void;
 }
 
 function SkillsCard({
   resumeId,
   skills,
-  openDialogForEdit,
-  openDialogForAdd,
+  onEdit,
+  onAdd,
 }: SkillsCardProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -39,7 +39,7 @@ function SkillsCard({
           variant="ghost"
           size="sm"
           className="h-8 gap-1"
-          onClick={openDialogForAdd}
+          onClick={onAdd}
         >
           <Plus className="h-3.5 w-3.5" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -59,7 +59,7 @@ function SkillsCard({
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0"
-                onClick={() => openDialogForEdit(sc, index)}
+                onClick={() => onEdit(sc, index)}
               >
                 <Edit className="h-3 w-3" />
               </Button>
