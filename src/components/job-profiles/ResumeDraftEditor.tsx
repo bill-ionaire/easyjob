@@ -9,6 +9,7 @@ interface Props {
   draft?: any
   onSave: (input: ResumeData & { title: string }) => void
   onCancel: () => void
+  saving?: boolean
 }
 
 const emptyData = (): ResumeData => ({
@@ -31,7 +32,7 @@ function draftToResumeData(draft: any): ResumeData {
   }
 }
 
-export function ResumeDraftEditor({ draft, onSave, onCancel }: Props) {
+export function ResumeDraftEditor({ draft, onSave, onCancel, saving }: Props) {
   const [title, setTitle] = useState(draft?.title ?? '')
   const [data, setData] = useState<ResumeData>(draft ? draftToResumeData(draft) : emptyData())
 
@@ -51,10 +52,10 @@ export function ResumeDraftEditor({ draft, onSave, onCancel }: Props) {
         <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
         <Button
           size="sm"
-          disabled={!title.trim()}
+          disabled={!title.trim() || saving}
           onClick={() => onSave({ ...data, title: title.trim() })}
         >
-          {draft ? 'Update Draft' : 'Create Draft'}
+          {saving ? 'Saving...' : draft ? 'Update Template' : 'Create Template'}
         </Button>
       </div>
     </div>

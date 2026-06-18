@@ -295,6 +295,24 @@ export const GENERATE_CV = gql`
 
 // ─── Job Profiles ─────────────────────────────────────────────────────────────
 
+export const JOB_PROFILE_QUERY = gql`
+  query JobProfile($id: ID!) {
+    jobProfile(id: $id) {
+      id
+      name
+      email
+      linkedin
+      phone
+      github
+      location
+      description
+      isDefault
+      applicationCount
+      resumeDraftCount
+    }
+  }
+`
+
 export const JOB_PROFILES_QUERY = gql`
   query JobProfiles {
     jobProfiles {

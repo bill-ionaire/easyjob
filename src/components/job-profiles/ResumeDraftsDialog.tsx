@@ -50,7 +50,7 @@ export function ResumeDraftsDialog({ profile, open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Resume Drafts — {profile.name}</DialogTitle>
+          <DialogTitle>Resume Templates — {profile.name}</DialogTitle>
         </DialogHeader>
 
         {editingDraft ? (
@@ -70,7 +70,7 @@ export function ResumeDraftsDialog({ profile, open, onOpenChange }: Props) {
               <p className="text-sm text-muted-foreground">Loading drafts...</p>
             ) : drafts.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                No resume drafts yet. Create one to use when manually editing application CVs.
+                No resume templates yet. Create one to use when manually editing application CVs.
               </p>
             ) : (
               <div className="space-y-2">
