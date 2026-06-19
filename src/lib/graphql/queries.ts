@@ -17,6 +17,11 @@ export const JOB_POSTS_QUERY = gql`
         applicationCount
         savedProfileIds
         createdAt
+        tags {
+          id
+          label
+          value
+        }
       }
       total
       page
@@ -42,6 +47,11 @@ export const JOB_POST_QUERY = gql`
       applicationCount
       createdAt
       updatedAt
+      tags {
+        id
+        label
+        value
+      }
     }
   }
 `
@@ -95,6 +105,39 @@ export const SET_JOB_POST_STATUS = gql`
 export const DELETE_JOB_POST = gql`
   mutation DeleteJobPost($id: ID!) {
     deleteJobPost(id: $id)
+  }
+`
+
+export const JOB_POST_TAGS_QUERY = gql`
+  query JobPostTags {
+    jobPostTags {
+      id
+      label
+      value
+    }
+  }
+`
+
+export const CREATE_JOB_POST_TAG = gql`
+  mutation CreateJobPostTag($label: String!) {
+    createJobPostTag(label: $label) {
+      id
+      label
+      value
+    }
+  }
+`
+
+export const SET_JOB_POST_TAGS = gql`
+  mutation SetJobPostTags($jobPostId: ID!, $tagIds: [ID!]!) {
+    setJobPostTags(jobPostId: $jobPostId, tagIds: $tagIds) {
+      id
+      tags {
+        id
+        label
+        value
+      }
+    }
   }
 `
 
