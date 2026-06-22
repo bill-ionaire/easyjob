@@ -217,6 +217,7 @@ export const JOB_APPLICATION_QUERY = gql`
         github
         phone
         location
+        details
       }
       resume {
         id
