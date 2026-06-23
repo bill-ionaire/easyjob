@@ -3,8 +3,10 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  Briefcase,
   Copy,
   Download,
+  ExternalLink,
   Globe,
   Unlink,
   Loader,
@@ -19,8 +21,7 @@ import { Button } from "../ui/button";
 import { ResumePdfPanel } from "./ResumePdfPanel";
 import { ResumeEditorPanel } from "./ResumeEditorPanel";
 import { generateResumePdfBlob } from "./resume-pdf/generateResumePdf";
-import { getResumeShareStatus, shareResume, unshareResume } from "@/actions/profile.actions";
-import { saveFullResume } from "@/actions/profile.actions";
+import { getResumeApplications, getResumeShareStatus, shareResume, unshareResume, saveFullResume } from "@/actions/profile.actions";
 import { toast } from "../ui/use-toast";
 import {
   DropdownMenu,
@@ -43,10 +44,16 @@ export function ResumePageView({ resume }: ResumePageViewProps) {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [isSharing, startShareTransition] = useTransition();
 
+  type AppInsight = { id: string; currentStatus: string; jobPost: { title: string; postedBy: string; sourceUrl: string | null } };
+  const [appInsights, setAppInsights] = useState<AppInsight[]>([]);
+
   useEffect(() => {
     if (!resume.id) return;
     getResumeShareStatus(resume.id).then((res) => {
       if (res?.success && res.data.shared) setShareToken(res.data.token);
+    });
+    getResumeApplications(resume.id).then((res) => {
+      if (res?.success) setAppInsights(res.data);
     });
   }, [resume.id]);
 
@@ -231,6 +238,30 @@ export function ResumePageView({ resume }: ResumePageViewProps) {
           </span>
         </Button>
       </div>
+
+      {/* Application insights */}
+      {appInsights.length > 0 && (
+        <div className="flex items-center gap-2 shrink-0 overflow-x-auto pb-0.5">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+            <Briefcase className="h-3.5 w-3.5" />
+            Used in {appInsights.length} {appInsights.length === 1 ? "application" : "applications"}:
+          </span>
+          {appInsights.map((app) => (
+            <div key={app.id} className="flex items-center gap-1 shrink-0 rounded-full border bg-muted/40 px-2.5 py-0.5 text-xs">
+              <Link href={`/dashboard/applications/${app.id}`} className="hover:underline font-medium">
+                {app.jobPost.title}
+              </Link>
+              <span className="text-muted-foreground">· {app.jobPost.postedBy}</span>
+              <span className="text-muted-foreground capitalize">· {app.currentStatus.replace(/_/g, " ")}</span>
+              {app.jobPost.sourceUrl && (
+                <a href={app.jobPost.sourceUrl} target="_blank" rel="noopener noreferrer" className="ml-0.5 text-muted-foreground hover:text-foreground">
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Split view: PDF preview + editor */}
       <div className="flex gap-4 flex-1 min-h-0">

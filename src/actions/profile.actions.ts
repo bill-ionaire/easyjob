@@ -552,6 +552,35 @@ export const deleteCertification = async (
   }
 };
 
+// ─── Resume application insights ─────────────────────────────────────────────
+
+export const getResumeApplications = async (resumeId: string): Promise<any | undefined> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const apps = await prisma.jobApplication.findMany({
+      where: { resumeId, userId: user.id },
+      select: {
+        id: true,
+        currentStatus: true,
+        createdAt: true,
+        jobPost: {
+          select: {
+            title: true,
+            postedBy: true,
+            sourceUrl: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return { success: true, data: apps };
+  } catch (error) {
+    return handleError(error, "Failed to get resume applications.");
+  }
+};
+
 // ─── Resume sharing ───────────────────────────────────────────────────────────
 
 export const shareResume = async (resumeId: string): Promise<any | undefined> => {
