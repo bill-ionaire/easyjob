@@ -1,4 +1,5 @@
 "use client";
+import { memo } from "react";
 import { PDFViewer } from "@react-pdf/renderer";
 import { Resume } from "@/models/profile.model";
 import { ResumeHtmlNodes } from "./generateResumePdf";
@@ -9,7 +10,7 @@ interface Props {
   htmlNodes: ResumeHtmlNodes;
 }
 
-export function PdfViewerPanel({ resume, htmlNodes }: Props) {
+export const PdfViewerPanel = memo(function PdfViewerPanel({ resume, htmlNodes }: Props) {
   return (
     <PDFViewer
       showToolbar={false}
@@ -18,4 +19,4 @@ export function PdfViewerPanel({ resume, htmlNodes }: Props) {
       <ProfessionalResumeDocument resume={resume} htmlNodes={htmlNodes} />
     </PDFViewer>
   );
-}
+});
