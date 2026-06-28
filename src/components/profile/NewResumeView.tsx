@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader, PanelRightClose, PanelRightOpen } from "lucide-react";
@@ -49,7 +49,7 @@ export function NewResumeView() {
     });
   };
 
-  const previewResume: Resume = { ...localResume, title };
+  const previewResume = useMemo<Resume>(() => ({ ...localResume, title }), [localResume, title]);
 
   return (
     <div className="col-span-3 flex flex-col gap-3 h-[calc(100dvh-5.5rem)]">
