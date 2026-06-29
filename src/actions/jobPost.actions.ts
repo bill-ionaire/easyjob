@@ -11,6 +11,7 @@ export const getJobPostTags = async (): Promise<
     if (!user) throw new Error("Not authenticated");
     return await prisma.jobPostTag.findMany({ orderBy: { label: "asc" } });
   } catch (error) {
-    return handleError(error, "Failed to fetch job post tags.");
+    handleError(error, "Failed to fetch job post tags.");
+    return undefined;
   }
 };

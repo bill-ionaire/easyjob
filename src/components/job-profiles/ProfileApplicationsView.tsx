@@ -162,7 +162,7 @@ export function ProfileApplicationsView() {
     refetchQueries: [JOB_APPLICATIONS_QUERY],
   })
 
-  const allApplications: any[] = (data as any)?.jobApplications?.items ?? []
+  const allApplications: any[] = useMemo(() => (data as any)?.jobApplications?.items ?? [], [data])
 
   // ── Client-side search filter (title + company) ──────────────────────────
   const filteredApplications = useMemo(() => {

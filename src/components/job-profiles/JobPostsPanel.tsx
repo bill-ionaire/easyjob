@@ -86,7 +86,7 @@ export function JobPostsPanel({ profileId, onHide, onSaved }: JobPostsPanelProps
     refetchQueries: [JOB_POSTS_QUERY, JOB_APPLICATIONS_QUERY],
   })
 
-  const posts: Post[] = (data as any)?.jobPosts?.items ?? []
+  const posts: Post[] = useMemo(() => (data as any)?.jobPosts?.items ?? [], [data])
   const totalPages = (data as any)?.jobPosts?.totalPages ?? 1
 
   // Accumulate locations across all pages/filters so the select is always populated
