@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useMutation, useLazyQuery } from '@apollo/client/react'
 import {
@@ -74,6 +75,9 @@ function CloneFromProfileButton({
 
 export function CVActionButton({ applicationId, jobProfileId, profileDetails, resume, initialStatus }: Props) {
   const refetchQueries = [{ query: JOB_APPLICATION_QUERY, variables: { id: applicationId } }]
+  const [optimisticPending, setOptimisticPending] = useState(false)
+
+  const isProcessing = optimisticPending || initialStatus === 'pending' || initialStatus === 'queued' || initialStatus === 'generating'
 
   const [loadDrafts, { data: draftsData, loading: draftsLoading }] = useLazyQuery(
     PROFILE_RESUME_DRAFTS_QUERY,
@@ -82,6 +86,7 @@ export function CVActionButton({ applicationId, jobProfileId, profileDetails, re
   const [generateCV, { loading: generating }] = useMutation(GENERATE_CV, {
     variables: { applicationId },
     refetchQueries,
+    onCompleted: () => setOptimisticPending(true),
   })
 
   const [linkResume, { loading: linking }] = useMutation(UPDATE_APPLICATION, {
@@ -96,11 +101,11 @@ export function CVActionButton({ applicationId, jobProfileId, profileDetails, re
   const cloneLoading = draftsLoading || linking
 
   // ── In progress ──────────────────────────────────────────────────────────────
-  if (initialStatus === 'pending' || initialStatus === 'queued' || initialStatus === 'generating') {
+  if (isProcessing) {
     return (
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        {initialStatus === 'generating' ? 'Generating resume…' : 'Queued…'}
+        {initialStatus === 'generating' ? 'Generating resume…' : 'Processing…'}
       </div>
     )
   }
